@@ -1,24 +1,6 @@
 # AlphaZero
 _Coming soon_
 
-## Installation
-Clone the repository
-```bash
-git clone https://github.com/Agnar22/AlphaZero.git
-```
-
-navigate into the project folder
-```bash
-cd AlphaZero
-```
-
-~~install requirements~~
-
-if everything went well, you should now be able to run the code
-```bash
-python3 Main.py
-```
-
 ## Motivation
 _Coming soon_
 

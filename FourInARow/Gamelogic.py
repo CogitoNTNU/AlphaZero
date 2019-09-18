@@ -26,11 +26,6 @@ class FourInARow:
     def get_legal_NN_output(self):
         """ A boolean array over the moves, with a 1 if the move represented by the index is legal. """
         return [1 if self.board[-1, x, 0] == self.board[-1, x, 1] == 0 else 0 for x in range(7)]
-        # moves = []
-        # for x in range(9):
-        #     if self.board[x // 3, x % 3, 0] == self.board[x // 3, x % 3, 1] == 0:
-        #         moves.append(x)
-        # return moves
 
     def __find_uppermost_empty(self, column):
         """
@@ -53,12 +48,6 @@ class FourInARow:
             self.__won()
         else:
             print('Illegal move')
-        # poss_moves = self.get_moves()
-        # if move in poss_moves:
-        #     self.board[move // 3, move % 3, len(self.history) % 2] = 1
-        #     self.history.append(move)
-        # else:
-        #     print('illegal move')
 
     def undo_move(self):
         """ Undoes the last move. """

@@ -112,10 +112,10 @@ class TicTacToe:
                 string += '|'
             print(string)
 
-# game = TicTacToe()
-# game.print_board()
-# while True:
-#     inp = int(input("Number:"))
-#     game.execute_move(inp)
-#     game.print_board()
-#     game.undo_move()
+game = TicTacToe()
+game.print_board()
+while True:
+     inp = int(input("Number:"))
+     game.execute_move(inp)
+     game.print_board()
+     game.undo_move()

@@ -7,7 +7,7 @@ from FourInARow import Gamelogic
 #import loss
 import collections
 
-C_PUCT = sqrt(2)
+C_PUCT = math.sqrt(2)
 
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
@@ -29,7 +29,7 @@ class Node:
         self.children.append(child)
     
     def is_leaf_node(self):
-        if len(children) == 0:
+        if len(self.children) == 0:
             return True
         return False
     
@@ -57,10 +57,6 @@ class MCTS:
         self.tree = Node(None, None)
         self.tree.board_state = self.start_state
 
-    # Setting the game the MCTS will be used on
-    def set_game(self, game):
-        pas
-
     # Setting the evaluation algorithm used by the MCTS
     def set_evaluation(self, eval):
         pass
@@ -71,30 +67,57 @@ class MCTS:
         node = state
         for child in node.children:
             action_numbers[child.last_action] = child.get_times_visited()
-
-
+        return action_numbers   
 
     # Returning the prior probabilities of a state, also known as the "raw" NN predictions
     def get_prior_probabilities(self, state):
-        pass
+        return raw_NN_predictions(state)
 
     # Returning the posterior search probabilities of the search,
     # meaning that the percentages is calculated by: num_exec/total
     def get_posterior_probabilities(self, state):
-        pass
+        tot = 0
+        post_prob = {}
+        actions = self.get_action_numbers(state)
+        for action in actions:
+            tot += actions[action]
+        for action in actions:
+            post_prob[action] = actions[action] / tot
+        return post_prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
-    def get_temperature_probabilities(self, state):
-        pass
+    def get_temperature_probabilities(self, state, T):
+        pi = {}
+        actions = self.get_action_numbers(state)
+        for action in actions:
+            pi[action] = (actions[action])**(1/T)
+        return pi    
+
 
     # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, state):
-        pass
+        pi = get_temperature_probabilities(state)
+        pi_sum = 0
+        for value in pi:
+            pi_sum = pi_sum + value
+        choice = np.rand(0, pi_sum)
+        tellesum = 0
+        for i in range(0, len(pi)):
+            tellesum = tellesum + pi[i]
+            if choice < tellesum:
+                return i
+    
+    def evaluate(self, state, to_play):
+        if to_play != 0:
+            value = 1 - self.evaluate(state, 0)
+        else:
+            value = get_info_from_NN()
+            return value
 
     def get_most_searched_move(self, state):
-        actions = get_action_numbers(state)
+        actions = self.get_action_numbers(state)
         most_searched_move = 0
-        max = -1
+        max = -1    
         for action in actions:
             if actions[action] > max:
                 most_searched_move = action
@@ -104,7 +127,7 @@ class MCTS:
     # Executing MCTS search a "number" times
     def search_series(self, number):
         for _ in range(number):
-            search()
+            self.search()
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
@@ -119,16 +142,18 @@ class MCTS:
                     best_puct = curr_puct
             node = best_child
         node.t = get_info_from_NN(node.state)
+        valid_moves = self.game.get_moves(node.get_board_state())
+        for move in valid_moves:
+            child = Node(node, move)
+        self.back_propagate(node)
 
     def back_propagate(self, node):
         if node.parent != None:
             node.get_parent.t += node.t
             back_propagate(node.get_parent)
 
-
-
     def PUCT(self, state, action):
-        actions = get_action_numbers(state)
+        actions = self.get_action_numbers()
 
         action_state = None
         for child in state.children:
@@ -138,7 +163,7 @@ class MCTS:
 
         N = actions[action]
         sum_N_potential_actions = sum(actions.values())
-        U = C_PUCT * get_prior_probabilities(state)*math.sqrt(sum_N_potential_actions)/(1+N)
+        U = C_PUCT * self.get_prior_probabilities(state)*math.sqrt(sum_N_potential_actions)/(1+N)
 
         Q = action_state.get_total_values()/N
 

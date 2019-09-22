@@ -4,10 +4,11 @@ import random
 import numpy as np
 # from Othello import Gamelogic
 from FourInARow import Gamelogic
+from FourInARow import 
 #import loss
 import collections
 
-C_PUCT = sqrt(2)
+C_PUCT = math.sqrt(2)
 
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
@@ -29,7 +30,7 @@ class Node:
         self.children.append(child)
     
     def is_leaf_node(self):
-        if len(children) == 0:
+        if len(self.children) == 0:
             return True
         return False
     
@@ -58,8 +59,6 @@ class MCTS:
         self.tree.board_state = self.start_state
 
     # Setting the game the MCTS will be used on
-    def set_game(self, game):
-        pas
 
     # Setting the evaluation algorithm used by the MCTS
     def set_evaluation(self, eval):
@@ -72,24 +71,33 @@ class MCTS:
         for child in node.children:
             action_numbers[child.last_action] = child.get_times_visited()
 
-
-
     # Returning the prior probabilities of a state, also known as the "raw" NN predictions
     def get_prior_probabilities(self, state):
-        pass
+        return raw_NN_predictions(state)
 
     # Returning the posterior search probabilities of the search,
     # meaning that the percentages is calculated by: num_exec/total
     def get_posterior_probabilities(self, state):
-        pass
+        tot = 0
+        post_prob = {}
+        actions = self.get_action_numbers(state)
+        for action in actions:
+            tot += actions[action]
+        for action in actions:
+            post_prob[action] = actions[action] / tot
+        return post_prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
-    def get_temperature_probabilities(self, state):
-        pass
+    def get_temperature_probabilities(self, state, T):
+        pi = {}
+        actions = self.get_action_numbers(state)
+        for action in actions:
+            pi[action] = (actions[action])**(1/T)
+        return pi    
+
 
     # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, state):
-        pass
 
     def get_most_searched_move(self, state):
         actions = get_action_numbers(state)
@@ -113,19 +121,21 @@ class MCTS:
             while not node.is_leaf_node():
                 best_puct = 0
                 for n in ndoe.children:
-                    curr_puct = PUCT(n.state, n.action)
+                    curr_puct = self.PUCT(n.state, n.action)
                     if (curr_puct > best_puct):
                         best_child = n
                         best_puct = curr_puct
                 node = best_child
             node.t = get_info_from_NN(node.state)
+            valid_moves = self.game.get_moves(node.get_board_state())
+            for move in valid_moves:
+                child = Node(node, move)
+            self.back_propagate(node)
 
     def back_propagate(self, node):
         if node.parent != None:
             node.get_parent.t += node.t
             back_propagate(node.get_parent)
-
-
 
     def PUCT(self, state, action):
         actions = get_action_numbers(state)

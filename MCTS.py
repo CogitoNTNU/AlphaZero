@@ -53,7 +53,8 @@ class MCTS:
         self.start_state = start_state
 
     def reset_search(self):
-        self.tree = Node(None, start_state)
+        self.tree = Node(None, None)
+        self.tree.board_state = self.start_state
 
     # Setting the game the MCTS will be used on
     def set_game(self, game):
@@ -108,9 +109,9 @@ class MCTS:
         pass
 
     def PUCT(self, state, action):
-        actions = get_action_numbers()
+        actions = get_action_numbers(state)
 
-        action_state = Null
+        action_state = None
         for child in state.children:
             if child.get_last_action() == action:
                 action_state = child

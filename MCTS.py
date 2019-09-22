@@ -90,7 +90,16 @@ class MCTS:
 
     # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, state):
-        pass
+        pi = get_temperature_probabilities(state)
+        pi_sum = 0
+        for value in pi:
+            pi_sum = pi_sum + value
+        choice = np.rand(0, pi_sum)
+        tellesum = 0
+        for i in range(0, len(pi)):
+            tellesum = tellesum + pi[i]
+            if choice < tellesum:
+                return i
     
     def evaluate(self, state, to_play):
         if to_play != 0:
@@ -102,7 +111,7 @@ class MCTS:
     def get_most_searched_move(self, state):
         actions = self.get_action_numbers(state)
         most_searched_move = 0
-        max = -1
+        max = -1    
         for action in actions:
             if actions[action] > max:
                 most_searched_move = action
@@ -112,7 +121,7 @@ class MCTS:
     # Executing MCTS search a "number" times
     def search_series(self, number):
         for _ in range(number):
-            search()
+            self.search()
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
@@ -120,7 +129,7 @@ class MCTS:
             self.best_child = None
             while not node.is_leaf_node():
                 best_puct = 0
-                for n in ndoe.children:
+                for n in node.children:
                     curr_puct = PUCT(n.state, n.action)
                     if (curr_puct > best_puct):
                         best_child = n
@@ -132,8 +141,6 @@ class MCTS:
         if node.parent != None:
             node.get_parent.t += node.t
             back_propagate(node.get_parent)
-
-
 
     def PUCT(self, state, action):
         actions = self.get_action_numbers()

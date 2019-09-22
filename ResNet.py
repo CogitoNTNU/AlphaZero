@@ -11,7 +11,6 @@ from keras.layers import Input
 from keras.models import Model
 from keras.layers import add
 from keras.regularizers import l2
-from keras import backend as K
 
 
 class ResNet:
@@ -44,8 +43,8 @@ class ResNet:
 
         # the first block of the ResNet module are the 1x1 CONVs
         bn1 = BatchNormalization(axis=chan_dim,
-                                 epsilon=bnEps,
-                                 momentum=bnMom)(data)
+                                 epsilon=bn_eps,
+                                 momentum=bn_mom)(data)
         act1 = Activation("relu")(bn1)
         conv1 = Conv2D(filters=int(filters * 0.25),
                        kernel_size=(1, 1),
@@ -53,7 +52,7 @@ class ResNet:
                        kernel_regularizer=l2(reg)
                        )(act1)
 
-        # the second block of the ResNet module are the 3x3 CONVs
+        # The second block of the ResNet module are the 3x3 CONVs
         bn2 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv1)
         act2 = Activation("relu")(bn2)
         conv2 = Conv2D(
@@ -202,8 +201,8 @@ class ResNet:
         )(input_data)
         x = BatchNormalization(
             axis=chan_dim,
-            epsilon=bnEps,
-            momentum=bnMom
+            epsilon=bn_eps,
+            momentum=bn_mom
         )(x)
         x = Activation("relu")(x)
 
@@ -216,21 +215,10 @@ class ResNet:
                 chan_dim=chan_dim,
             )
 
-        # Apply BN => ACT => POOL
-        x = BatchNormalization(axis=chan_dim, epsilon=bnEps,
-                               momentum=bnMom)(x)
-        x = Activation("relu")(x)
-        x = AveragePooling2D((8, 8))(x)
-
-        # Softmax classifier
-        x = Flatten()(x)
-        x = Dense(classes, kernel_regularizer=l2(reg))(x)
-        x = Activation("softmax")(x)
-
         # Policy head
         pol_head = ResNet.policy_head(x,
                                       chan_dim=chan_dim,
-                                      policy_output_dim= policy_output_dim,
+                                      policy_output_dim=policy_output_dim,
                                       bn_eps=bn_eps,
                                       bn_mom=bn_mom)
 
@@ -245,3 +233,18 @@ class ResNet:
 
         # return the constructed network architecture
         return model
+
+    def get_resnet(self):
+        """
+        Method for return the model
+        :return: ResNet model
+        """
+        return self.build(height=6,
+                          width=7,
+                          depth=2,
+                          filters=256,
+                          policy_output_dim=7)
+
+
+resnet = ResNet()
+model_resnet = resnet.get_resnet()

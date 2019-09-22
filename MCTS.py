@@ -131,21 +131,21 @@ class MCTS:
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
-            node = self.tree
-            self.best_child = None
-            while not node.is_leaf_node():
-                best_puct = 0
-                for n in node.children:
-                    curr_puct = PUCT(n.state, n.action)
-                    if (curr_puct > best_puct):
-                        best_child = n
-                        best_puct = curr_puct
-                node = best_child
-            node.t = get_info_from_NN(node.state)
-            valid_moves = self.game.get_moves(node.get_board_state())
-            for move in valid_moves:
-                child = Node(node, move)
-            self.back_propagate(node)
+        node = self.tree
+        self.best_child = None
+        while not node.is_leaf_node():
+            best_puct = 0
+            for n in node.children:
+                curr_puct = PUCT(n.state, n.action)
+                if (curr_puct > best_puct):
+                    best_child = n
+                    best_puct = curr_puct
+            node = best_child
+        node.t = get_info_from_NN(node.state)
+        valid_moves = self.game.get_moves(node.get_board_state())
+        for move in valid_moves:
+            child = Node(node, move)
+        self.back_propagate(node)
 
     def back_propagate(self, node):
         if node.parent != None:

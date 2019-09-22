@@ -18,7 +18,8 @@ class Node:
         self.t = t
         self.n = n
         self.last_action = action
-        self.board_state = parent.get_board_state.execute_move(action)
+        if parent:
+            self.board_state = parent.get_board_state.execute_move(action)
         self.children = []
     
     def get_parent(self):
@@ -47,7 +48,8 @@ class Node:
 class MCTS:
     
     def __init__(self, tree, start_state):
-        self.tree = Node(None, start_state)
+        self.tree = Node(None, None)
+        self.tree.board_state = start_state
         self.start_state = start_state
 
     def reset_search(self):

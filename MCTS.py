@@ -108,9 +108,9 @@ class MCTS:
         pass
 
     def PUCT(self, state, action):
-        actions = get_action_numbers()
+        actions = self.get_action_numbers()
 
-        action_state = Null
+        action_state = None
         for child in state.children:
             if child.get_last_action() == action:
                 action_state = child
@@ -118,7 +118,7 @@ class MCTS:
 
         N = actions[action]
         sum_N_potential_actions = sum(actions.values())
-        U = C_PUCT * get_prior_probabilities(state)*math.sqrt(sum_N_potential_actions)/(1+N)
+        U = C_PUCT * self.get_prior_probabilities(state)*math.sqrt(sum_N_potential_actions)/(1+N)
 
         Q = action_state.get_total_values()/N
 

@@ -3,7 +3,7 @@ import time
 import random
 import numpy as np
 # from Othello import Gamelogic
-from TicTacToe import Gamelogic
+from FourInARow import Gamelogic
 #import loss
 import collections
 
@@ -11,7 +11,7 @@ C_PUCT = sqrt(2)
 
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
-    def __init__(self, parent, t=0, n=0, action):
+    def __init__(self, parent, action, t=0, n=0):
         self.parent = parent
         if parent:
             parent.add_child(self)
@@ -47,10 +47,11 @@ class Node:
 
 class MCTS:
     
-    def __init__(self, tree, start_state):
+    def __init__(self, tree, start_state, game):
         self.tree = Node(None, None)
         self.tree.board_state = start_state
         self.start_state = start_state
+        self.game = game
 
     def reset_search(self):
         self.tree = Node(None, None)
@@ -58,7 +59,7 @@ class MCTS:
 
     # Setting the game the MCTS will be used on
     def set_game(self, game):
-        pass
+        pas
 
     # Setting the evaluation algorithm used by the MCTS
     def set_evaluation(self, eval):
@@ -69,7 +70,7 @@ class MCTS:
         action_numbers = {}
         node = state
         for child in node.children:
-            action_numbers[child.last_action] = child.get_times_visited
+            action_numbers[child.last_action] = child.get_times_visited()
 
 
 
@@ -102,11 +103,29 @@ class MCTS:
 
     # Executing MCTS search a "number" times
     def search_series(self, number):
-        pass
+        for _ in range(number):
+            search()
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
-        pass
+            node = self.tree
+            self.best_child = None
+            while not node.is_leaf_node():
+                best_puct = 0
+                for n in ndoe.children:
+                    curr_puct = PUCT(n.state, n.action)
+                    if (curr_puct > best_puct):
+                        best_child = n
+                        best_puct = curr_puct
+                node = best_child
+            node.t = get_info_from_NN(node.state)
+
+    def back_propagate(self, node):
+        if node.parent != None:
+            node.get_parent.t += node.t
+            back_propagate(node.get_parent)
+
+
 
     def PUCT(self, state, action):
         actions = get_action_numbers(state)

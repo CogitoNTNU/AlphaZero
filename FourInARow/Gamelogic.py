@@ -51,7 +51,7 @@ class FourInARow:
 
     def undo_move(self):
         """ Undoes the last move. """
-        if len(self.history) > 0:
+        if len(self.history) > 0 or self.history[-1] is None:
             move = self.history[-1]
             self.history.pop()
             self.board[self.__find_uppermost_empty(move) - 1, move, len(self.history) % 2] = 0
@@ -70,29 +70,37 @@ class FourInARow:
         directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
         player = 1 * (len(self.history) % 2 == 0)
         column = self.history[-1]
-        row = self.__find_uppermost_empty(column) - 1
-        for dir in directions:
-            num_in_row = 1
+        columns = []
+        if column is None:
+            for i in range(self.board.shape[1]):
+                if self.__find_uppermost_empty(i) > 0:
+                    columns.append(i)
+        else:
+            columns.append(column)
+        for column in columns:
+            row = self.__find_uppermost_empty(column) - 1
+            for dir in directions:
+                num_in_row = 1
 
-            """ Search in positive direction """
-            r, c = row, column
-            r += dir[0]
-            c += dir[1]
-            while self.__valid_coordinates(r, c) and self.board[r, c, player]:
-                num_in_row += 1
+                """ Search in positive direction """
+                r, c = row, column
                 r += dir[0]
                 c += dir[1]
+                while self.__valid_coordinates(r, c) and self.board[r, c, player]:
+                    num_in_row += 1
+                    r += dir[0]
+                    c += dir[1]
 
-            """ Search in negative direction """
-            r, c = row, column
-            r -= dir[0]
-            c -= dir[1]
-            while self.__valid_coordinates(r, c) and self.board[r, c, player]:
-                num_in_row += 1
+                """ Search in negative direction """
+                r, c = row, column
                 r -= dir[0]
                 c -= dir[1]
-            if num_in_row >= 4:
-                return True
+                while self.__valid_coordinates(r, c) and self.board[r, c, player]:
+                    num_in_row += 1
+                    r -= dir[0]
+                    c -= dir[1]
+                if num_in_row >= 4:
+                    return True
         return False
 
     def is_final(self):
@@ -138,12 +146,23 @@ class FourInARow:
             print(string)
 
 
+    @classmethod
+    def create_game(cls, state):
+        game = cls()
+        game.board = state
+        game.history = np.sum(state)*[None]
+        return game
+
 # game = FourInARow()
+# print(game.board.shape)
 # game.print_board()
+# print(game.get_moves())
+# print(game.get_score())
+# print(len(game.history))
 # while True:
 #     inp = int(input("Number:"))
 #     game.execute_move(inp)
 #     game.print_board()
 #     if game.is_final():
 #         print("Player " + str(1-(len(game.history) % 2)) + " won.")
-#     game.undo_move()
+#     #game.undo_move()

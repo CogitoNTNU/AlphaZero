@@ -1,22 +1,33 @@
-from Othello import Gamelogic
+from TicTacToe import Gamelogic
+from TicTacToe import Config
 import pygame
 import sys
 
 
-class OthelloRendering:
+class TicTacToeRendering:
 
     def __init__(self, game):
         pygame.init()
         self.game = game
         self.side_length = 50
         self.line_th = 5
-        self.screen = pygame.display.set_mode(
-            [self.side_length * 8 + self.line_th, self.side_length * 8 + self.line_th])
+        self.height = 3
+        self.width = 3
+        #self.extrawidth = 150
+        self.image = pygame.image.load("nevraltnett.png")
+        self.imagerect = self.image.get_size()
+        self.black = (0, 0, 0)
+        self.white = (255, 255, 255)
+        self.move_color = (255, 0, 0)
+        self.background_color=(0, 109, 50)
+        self.piece_size = 20
+        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0], max(self.side_length * self.height + self.line_th,self.imagerect[1])])
         while True:
+            self.mouse_pos = pygame.mouse.get_pos()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
-                elif pygame.mouse.get_pressed()[0]:
+                elif pygame.mouse.get_pressed()[0] and self.mouse_pos[0] < self.side_length * self.width + self.line_th and self.mouse_pos[1] < self.side_length * self.height + self.line_th: #Sjekk om musen er innenfor brettet
                     self.execute_move()
                 elif pygame.key.get_pressed()[32]:
                     self.game.undo_move()
@@ -26,35 +37,35 @@ class OthelloRendering:
                 pygame.display.flip()
 
     def _render_background(self):
-        self.screen.fill([0, 109, 50])
-        for x in range(9):
-            pygame.draw.line(self.screen, (0, 0, 0), [x * self.side_length + 2, 0], [x * self.side_length + 2, 403],
+        self.screen.fill(self.background_color)
+        for x in range(self.width + 1):
+            pygame.draw.line(self.screen, self.black, [x * self.side_length + 2, 0], [x * self.side_length + 2, self.side_length * self.height + self.line_th-2],
                              self.line_th)
-            pygame.draw.line(self.screen, (0, 0, 0), [0, x * self.side_length + 2], [403, x * self.side_length + 2],
+            pygame.draw.line(self.screen, self.black, [0, x * self.side_length + 2], [self.side_length * self.width + self.line_th-2, x * self.side_length + 2],
                              self.line_th)
+        self.screen.blit(self.image,((self.side_length*self.width)+self.line_th,0))
 
     def _render_pieces(self):
-        board = self.game.get_board()
-        for x in range(8):
-            for y in range(8):
+        board = self.game.board
+        for x in range(self.width):
+            for y in range(self.height):
                 if board[x, y, 1] == 1:
-                    pygame.draw.circle(self.screen, (255, 255, 255),
-                                       [28 + self.side_length * x, 28 + self.side_length * y], 20)
+                    pygame.draw.circle(self.screen, self.white,
+                                       [(self.side_length + self.line_th) // 2 + self.side_length * x, (self.side_length + self.line_th) // 2 + self.side_length * y], self.piece_size)
                 elif board[x, y, 0] == 1:
-                    pygame.draw.circle(self.screen, (0, 0, 0), [28 + self.side_length * x, 28 + self.side_length * y],
-                                       20)
+                    pygame.draw.circle(self.screen, self.black, [(self.side_length + self.line_th) // 2 + self.side_length * x, (self.side_length + self.line_th) // 2 + self.side_length * y],
+                                       self.piece_size)
 
     def _render_possible_moves(self):
         possible_moves = self.game.get_moves()
         for move in possible_moves:
-            pygame.draw.circle(self.screen, (255, 0, 0), [28 + 50 * move[0], 28 + 50 * move[1]], 20)
+            pygame.draw.circle(self.screen, self.move_color, [(self.side_length + self.line_th) // 2 + self.side_length * (Config.move_to_number(move)//3), (self.side_length + self.line_th) // 2 + self.side_length * (Config.move_to_number(move) % 3)], self.piece_size)
 
     def render(self):
         pass
 
     def execute_move(self):
-        pos = pygame.mouse.get_pos()
-        self.game.execute_move([(pos[0] - 2) // 50, (pos[1] - 2) // 50])
+        self.game.execute_move(Config.number_to_move((self.mouse_pos[0] - 2) // self.side_length * 3 + (self.mouse_pos[1] - 2) // self.side_length))#må generaliseres
 
 
-rendering = OthelloRendering(Gamelogic.Othello())
+rendering = TicTacToeRendering(Gamelogic.TicTacToe())

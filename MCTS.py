@@ -9,6 +9,7 @@ from FourInARow import Gamelogic
 import collections
 
 C_PUCT = math.sqrt(2)
+game = Gamelogic()
 
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
@@ -20,7 +21,7 @@ class Node:
         self.n = n
         self.last_action = action
         if parent:
-            self.board_state = parent.get_board_state.execute_move(action)
+            self.board_state = game.create_game(parent.get_board_state).execute_move(action).get_board_state()
         self.children = []
     
     def get_parent(self):
@@ -48,12 +49,13 @@ class Node:
 
 class MCTS:
     
-    def __init__(self, tree, start_state, game):
+    def __init__(self, tree, start_state, agent):
         self.tree = Node(None, None)
         self.tree.board_state = start_state
         self.start_state = start_state
-        self.game = game
+        self.agent = agent
         self.T = 1
+        self.level = 0
 
     def reset_search(self):
         self.tree = Node(None, None)
@@ -63,7 +65,7 @@ class MCTS:
         correct = None
         start = self.tree
 
-        def search_nodechildren_for_state(node,state):
+        def search_nodechildren_for_state(self, node, state):
             if node.get_board_state() == state:
                 return node
             if not node.is_leaf_node():
@@ -91,7 +93,7 @@ class MCTS:
 
     # Returning the prior probabilities of a state, also known as the "raw" NN predictions
     def get_prior_probabilities(self, board_state):
-        return raw_NN_predictions(board_state)
+        return agent.predict(board_state)[1].flatten()
 
     # Returning the posterior search probabilities of the search,
     # meaning that the percentages is calculated by: num_exec/total
@@ -161,17 +163,25 @@ class MCTS:
                 if (curr_puct > best_puct):
                     best_child = n
                     best_puct = curr_puct
+            self.level += 1
             node = best_child
-        node.t = get_info_from_NN(node.get_board_state())
+        node.t = self.agent.predict(node.get_board_state())[0]
         valid_moves = self.game.get_moves(node.get_board_state())
         for move in valid_moves:
             child = Node(node, move)
         self.back_propagate(node)
 
     def back_propagate(self, node):
-        if node.parent != None:
-            node.get_parent.t += node.t
-            self.back_propagate(node.get_parent)
+        turn = self.level % 2
+        if game.create_game(node.get_board_state()).is_final():
+            node.t = (game.get_outcome()[turn] + 1) / 2
+            (node.get_parent()).n += 1
+            self.back_propagate(node.get_parent())
+        self.level = 0
+        elif node.parent != None:
+            (node.get_parent()).t += node.t
+            (node.get_parent()).n += 1
+            self.back_propagate(node.get_parent())
 
     def PUCT(self, node_state, action):
         actions = self.get_action_numbers(node_state)
@@ -180,7 +190,6 @@ class MCTS:
         for child in node_state.children:
             if child.get_last_action() == action:
                 action_state = child
-
 
         N = actions[action]
         sum_N_potential_actions = sum(actions.values())

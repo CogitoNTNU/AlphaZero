@@ -27,7 +27,7 @@ def get_tree(config, agent, game, dirichlet_noise=True):
 
 
 # Generating data by self-play
-def generate_data(game, agent, config, num_sim=100, games=1000):
+def generate_data(game, agent, config, num_sim=100, games=1):
     tree = get_tree(config, agent, game)
 
     x = []
@@ -48,10 +48,10 @@ def generate_data(game, agent, config, num_sim=100, games=1000):
             tree.search()
 
             state = game.get_state()
-            temp_move = tree.get_temperature_move(state)
+            temp_move = tree.get_temperature_move(tree.tree)
 
             history.append(temp_move)
-            policy_targets.append(np.array(tree.get_posterior_probabilities(state)))
+            policy_targets.append(np.array(tree.get_posterior_probabilities(tree.tree)))
             player_moved_list.append(game.get_turn())
             positions.append(np.array(game.get_board()))
 

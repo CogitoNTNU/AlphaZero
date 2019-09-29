@@ -124,7 +124,7 @@ class MCTS:
 
     # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, node_state):
-        pi = self.get_temperature_probabilities(node_state, T)
+        pi = self.get_temperature_probabilities(node_state, self.T)
         pi_sum = 0
         for value in pi:
             pi_sum = pi_sum + value
@@ -171,13 +171,14 @@ class MCTS:
             self.level += 1
             node = best_child
         result = self.agent.predict(np.array([node.get_board_state()]))
-        node.t = result[1]
+        print(result)
+        node.t = result[1][0][0]
         if game.create_game(node.get_board_state()).player_turn() == 1:
             node.t = 1-node.t
 
         valid_moves = game.get_moves_from_board_state(node.get_board_state())
         for move in valid_moves:
-            Node(game, node, move, result[0][move])
+            Node(game, node, move, result[0][0][move])
         node.n += 1
         self.back_propagate(node, node.t)
 

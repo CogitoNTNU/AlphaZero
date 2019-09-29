@@ -24,6 +24,9 @@ class TicTacToe:
     def get_moves(self):
         return [x for x in range(9) if self.board[x // 3, x % 3, 0] == self.board[x // 3, x % 3, 1] == 0]
 
+    def get_moves_from_board_state(self, board_state):
+        return [x for x in range(9) if board_state[x // 3, x % 3, 0] == board_state[x // 3, x % 3, 1] == 0]
+
     def get_legal_NN_output(self):
         return [1 if self.board[x // 3, x % 3, 0] == self.board[x // 3, x % 3, 1] == 0 else 0 for x in range(9)]
         # moves = []
@@ -33,7 +36,7 @@ class TicTacToe:
         # return moves
 
     def execute_move(self, move):
-        self.board[move // 3, move % 3, len(self.history) % 2] = 1
+        self.board[move // 3, move % 3, self.player_turn()] = 1
         self.history.append(move)
         # poss_moves = self.get_moves()
         # if move in poss_moves:
@@ -41,6 +44,23 @@ class TicTacToe:
         #     self.history.append(move)
         # else:
         #     print('illegal move')
+        return self
+    
+    def player_turn(self):
+        p1 = 0
+        p2 = 0
+        for row in self.board:
+            for rute in row:
+                if rute[0] == 1:
+                    p1 += 1
+                elif rute[1] == 1:
+                    p2 += 1
+        if p1 == p2:
+            return 0
+        else:
+            return 1
+
+
 
     def undo_move(self):
         if len(self.history) > 0:
@@ -101,6 +121,10 @@ class TicTacToe:
     def get_board(self):
         return self.board if len(self.history) % 2 == 0 else np.flip(self.board, -1)
 
+    def create_game(self, board_state):
+        self.board = board_state
+        return self
+
 
     def print_board(self):
         for x in range(3):
@@ -112,10 +136,4 @@ class TicTacToe:
                 string += '|'
             print(string)
 
-game = TicTacToe()
-game.print_board()
-while True:
-     inp = int(input("Number:"))
-     game.execute_move(inp)
-     game.print_board()
-     game.undo_move()
+   

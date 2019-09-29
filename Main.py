@@ -14,15 +14,15 @@ import numpy as np
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
-    tree = MCTS.MCTS()
-    tree.dirichlet_noise = dirichlet_noise
-    tree.NN_input_dim = config.board_dims
-    tree.policy_output_dim = config.policy_output_dim
-    tree.NN_output_to_moves_func = config.NN_output_to_moves
-    tree.move_to_number_func = config.move_to_number
-    tree.number_to_move_func = config.number_to_move
-    tree.set_evaluation(agent)
-    tree.set_game(game)
+    tree = MCTS.MCTS(game.get_board(), agent)
+    #tree.dirichlet_noise = dirichlet_noise
+    #tree.NN_input_dim = config.board_dims
+    #tree.policy_output_dim = config.policy_output_dim
+    #tree.NN_output_to_moves_func = config.NN_output_to_moves
+    #tree.move_to_number_func = config.move_to_number
+    #tree.number_to_move_func = config.number_to_move
+    #tree.set_evaluation(agent)
+    #tree.set_game(game)
     return tree
 
 

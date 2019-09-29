@@ -7,7 +7,7 @@ import random
 from TicTacToe.Gamelogic import TicTacToe
 #import loss
 import collections
-from FakeNN import agent0
+#from FakeNN import agent0
 
 C_PUCT = math.sqrt(2)
 
@@ -49,6 +49,7 @@ class Node:
     def get_total_values(self):
         return self.t
 
+
 class MCTS:
     
     def __init__(self, start_state, agent):
@@ -83,7 +84,7 @@ class MCTS:
 
     # Setting the evaluation algorithm used by the MCTS
     def set_evaluation(self, eval):
-        pass
+        self.agent = eval
 
     # Returning a dictionary with action as key and visit number as value
     def get_action_numbers(self, node_state):
@@ -205,12 +206,12 @@ class MCTS:
         return Q + U
 
 
-game = TicTacToe()
-agent = agent0()
-MCTS = MCTS(game.get_board(), agent)
-for i in range(1000):
-    MCTS.search(game)
-print(MCTS.tree.children)
-for i in MCTS.tree.children:
-    print(i.n)
+#game = TicTacToe()
+#agent = agent0()
+#MCTS = MCTS(game.get_board(), agent)
+#for i in range(1000):
+#    MCTS.search(game)
+#print(MCTS.tree.children)
+#for i in MCTS.tree.children:
+#    print(i.n)
 

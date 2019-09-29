@@ -15,15 +15,16 @@ C_PUCT = math.sqrt(2)
 
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
-    def __init__(self, parent, action, probability=0, t=0, n=0):
+    def __init__(self, game, parent, action, probability=0, t=0, n=0):
         self.parent = parent
+        self.game = game
         if parent:
             parent.add_child(self)
         self.t = t
         self.n = n
         self.last_action = action
         if parent:
-            self.board_state = np.flip(game.create_game(parent.get_board_state()).execute_move(action).get_board(), -1)
+            self.board_state = np.flip(self.game.create_game(parent.get_board_state()).execute_move(action).get_board(), -1)
         self.children = []
         self.probability = probability
     
@@ -54,7 +55,7 @@ class Node:
 class MCTS:
     
     def __init__(self, game, start_state, agent):
-        self.tree = Node(None, None)
+        self.tree = Node(game, None, None)
         self.game = game
         self.tree.board_state = start_state
         self.start_state = start_state
@@ -63,7 +64,7 @@ class MCTS:
         self.level = 0
 
     def reset_search(self):
-        self.tree = Node(None, None)
+        self.tree = Node(game, None, None)
         self.tree.board_state = self.start_state
     
     def find_node_given_state(self, state):
@@ -113,7 +114,7 @@ class MCTS:
         return post_prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
-    def get_temperature_probabilities(self, node_state):
+    def get_temperature_probabilities(self, node_state, T):
         pi = {}
         actions = self.get_action_numbers(node_state)
         for action in actions:
@@ -123,7 +124,7 @@ class MCTS:
 
     # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, node_state):
-        pi = self.get_temperature_probabilities(node_state)
+        pi = self.get_temperature_probabilities(node_state, T)
         pi_sum = 0
         for value in pi:
             pi_sum = pi_sum + value
@@ -154,7 +155,7 @@ class MCTS:
     # Executing MCTS search a "number" times
     def search_series(self, number):
         for _ in range(number):
-            self.search(self.game)
+            self.search()
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
@@ -176,7 +177,7 @@ class MCTS:
 
         valid_moves = game.get_moves_from_board_state(node.get_board_state())
         for move in valid_moves:
-            Node(node, move, result[0][move])
+            Node(game, node, move, result[0][move])
         node.n += 1
         self.back_propagate(node, node.t)
 
@@ -208,7 +209,6 @@ class MCTS:
         else:
             Q = 100000000
         return Q + U
-
 
 
 #agent = agent0()

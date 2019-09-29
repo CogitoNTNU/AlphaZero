@@ -8,6 +8,7 @@ from TicTacToe.Gamelogic import TicTacToe
 #import loss
 import collections
 from FakeNN import agent0
+from TicTacToe.Config import policy_output_dim
 
 C_PUCT = math.sqrt(2)
 
@@ -51,8 +52,9 @@ class Node:
 
 class MCTS:
     
-    def __init__(self, start_state, agent):
+    def __init__(self, game, start_state, agent):
         self.tree = Node(None, None)
+        self.game = game
         self.tree.board_state = start_state
         self.start_state = start_state
         self.agent = agent
@@ -86,9 +88,8 @@ class MCTS:
         pass
 
     # Returning a dictionary with action as key and visit number as value
-    def get_action_numbers(self, node_state):
-        action_numbers = {}
-        node = node_state
+    def get_action_numbers(self, node):
+        action_numbers = [0] * policy_output_dim
         for child in node.children:
             action_numbers[child.last_action] = child.get_times_visited()
         return action_numbers   
@@ -150,12 +151,13 @@ class MCTS:
         return most_searched_move
 
     # Executing MCTS search a "number" times
-    def search_series(self, number, game):
+    def search_series(self, number):
         for _ in range(number):
-            self.search(game)
+            self.search(self.game)
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
-    def search(self, game):
+    def search(self):
+        game = self.game
         node = self.tree
         while not node.is_leaf_node():
             best_puct = 0
@@ -179,7 +181,7 @@ class MCTS:
 
     def back_propagate(self, node, t):
         turn = self.level % 2
-        
+        game = self.game
         if game.create_game(node.get_board_state()).is_final():
             node.t = (game.get_outcome()[turn] + 1) / 2
             if node.get_parent() is not None:
@@ -192,8 +194,6 @@ class MCTS:
             self.back_propagate(node.get_parent(), t)
 
     def PUCT(self, node_state, action):
-
-        action_state = None
         for child in node_state.children:
             if child.get_last_action() == action:
                 action_state = child
@@ -211,11 +211,10 @@ class MCTS:
 
 game = TicTacToe()
 agent = agent0()
-MCTS = MCTS(game.get_board(), agent)
+MCTS = MCTS(game, game.get_board(), agent)
 for i in range(1000):
-    MCTS.search(game)
+    MCTS.search()
 print(MCTS.tree.children)
-for i in MCTS.tree.children:
-    print(i.n, i.t)
-
+for j in MCTS.tree.children[2].children:
+    print(j.n, j.t)
 

@@ -162,31 +162,35 @@ class MCTS:
             best_puct = 0
             for n in node.children:
                 curr_puct = self.PUCT(node, n.last_action)
-                if (curr_puct > best_puct):
+                if (curr_puct >= best_puct):
                     best_child = n
                     best_puct = curr_puct
             self.level += 1
             node = best_child
-        result = self.agent.predict(node.get_board_state())
+        result = self.agent.predict(np.array([node.get_board_state()]))
         node.t = result[1]
+        if game.create_game(node.get_board_state()).player_turn() == 1:
+            node.t = 1-node.t
+
         valid_moves = game.get_moves_from_board_state(node.get_board_state())
         for move in valid_moves:
             Node(node, move, result[0][move])
         node.n += 1
-        self.back_propagate(node)
+        self.back_propagate(node, node.t)
 
-    def back_propagate(self, node):
+    def back_propagate(self, node, t):
         turn = self.level % 2
+        
         if game.create_game(node.get_board_state()).is_final():
             node.t = (game.get_outcome()[turn] + 1) / 2
             if node.get_parent() is not None:
                 (node.get_parent()).n += 1
-                self.back_propagate(node.get_parent())
+                self.back_propagate(node.get_parent(), t)
                 self.level = 0
         elif node.get_parent() is not None:
-            (node.get_parent()).t += node.t
+            (node.get_parent()).t += t
             (node.get_parent()).n += 1
-            self.back_propagate(node.get_parent())
+            self.back_propagate(node.get_parent(), t)
 
     def PUCT(self, node_state, action):
 
@@ -206,7 +210,7 @@ class MCTS:
         return Q + U
 
 
-#game = TicTacToe()
+game = TicTacToe()
 #agent = agent0()
 #MCTS = MCTS(game.get_board(), agent)
 #for i in range(1000):

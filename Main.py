@@ -42,8 +42,9 @@ def generate_data(game, agent, config, num_sim=100, games=1000):
         player_moved_list = []
         positions = []
 
-        while not game.is_final():
+        for i in range(num_sim):
             tree.reset_search()
+            tree.tree.board_state = game.get_board()
             tree.search(num_sim)
 
             state = game.get_state()
@@ -55,6 +56,7 @@ def generate_data(game, agent, config, num_sim=100, games=1000):
             positions.append(np.array(game.get_board()))
 
             game.execute_move(temp_move)
+
 
         game_outcome = game.get_outcome()
         value_targets = [game_outcome[x] for x in player_moved_list]
@@ -75,6 +77,8 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=100, ga
 
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
+        print(x)
+        print(len(x))
         agent.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
 
     return agent

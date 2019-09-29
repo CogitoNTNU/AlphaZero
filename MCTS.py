@@ -160,7 +160,7 @@ class MCTS:
             best_puct = 0
             for n in node.children:
                 curr_puct = self.PUCT(node, n.last_action)
-                if (curr_puct > best_puct):
+                if (curr_puct >= best_puct):
                     best_child = n
                     best_puct = curr_puct
             self.level += 1
@@ -175,6 +175,7 @@ class MCTS:
         turn = self.level % 2
         if game.create_game(node.get_board_state()).is_final():
             node.t = (game.get_outcome()[turn] + 1) / 2
+            print(node.get_parent())
             if node.get_parent() != None:
                 (node.get_parent()).n += 1
                 self.back_propagate(node.get_parent())
@@ -184,17 +185,24 @@ class MCTS:
             (node.get_parent()).n += 1
             self.back_propagate(node.get_parent())
 
-    def PUCT(self, node_state, action):
-        actions = self.get_action_numbers(node_state)
+    def PUCT(self, node, action):
+        actions = self.get_action_numbers(node)
+        print("action")
+        print(self.get_action_numbers(node))
 
         action_state = None
-        for child in node_state.children:
+        for child in node.children:
             if child.get_last_action() == action:
                 action_state = child
 
         N = actions[action]
         sum_N_potential_actions = sum(actions.values())
-        U = C_PUCT * self.get_prior_probabilities(node_state)*math.sqrt(sum_N_potential_actions)/(1+N)
+        print("Summen")
+        print(sum_N_potential_actions)
+        U = C_PUCT * self.get_prior_probabilities(node)*math.sqrt(sum_N_potential_actions)/(1+N)
+        print("U")
+        print(self.get_prior_probabilities(node)*math.sqrt(sum_N_potential_actions)/(1+N))
+        print(self.get_prior_probabilities(node))
 
         if N != 0:
             Q = action_state.get_total_values()/N
@@ -206,10 +214,9 @@ class MCTS:
 game = TicTacToe()
 agent = agent0()
 MCTS = MCTS(game.get_board(), agent)
-MCTS.tree.n = 15
 MCTS.search(game)
 MCTS.search(game)
-print(MCTS.tree.children)
+MCTS.search(game)
 for i in MCTS.tree.children:
     print(i.n)
 

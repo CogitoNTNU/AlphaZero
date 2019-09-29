@@ -192,7 +192,7 @@ class ResNet:
 
         # Apply CONV => BN => ACT => POOL to reduce spatial size
         x = Conv2D(
-            filters=filters[0],
+            filters=filters,
             kernel_size=(3, 3),
             strides=(1, 1),
             use_bias=False,
@@ -226,7 +226,7 @@ class ResNet:
         val_head = ResNet.value_head(x,
                                      chan_dim=chan_dim,
                                      bn_eps=bn_eps,
-                                     bn_mon=bn_mom)
+                                     bn_mom=bn_mom)
 
         # create the model
         model = Model(input_data, [pol_head, val_head], name="resnet")

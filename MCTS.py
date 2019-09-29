@@ -18,16 +18,16 @@ class Node:
     def __init__(self, game, parent, action, probability=0, t=0, n=0):
         self.parent = parent
         self.game = game
-        if parent:
-            parent.add_child(self)
         self.t = t
         self.n = n
         self.last_action = action
-        if parent:
-            self.board_state = np.flip(self.game.create_game(parent.get_board_state()).execute_move(action).get_board(), -1)
         self.children = []
         self.probability = probability
-    
+        if parent:
+            parent.add_child(self)
+        if parent:
+            self.board_state = np.flip(self.game.create_game(parent.get_board_state()).execute_move(action).get_board(), -1)
+
     def get_parent(self):
         return self.parent
     
@@ -64,7 +64,7 @@ class MCTS:
         self.level = 0
 
     def reset_search(self):
-        self.tree = Node(game, None, None)
+        self.tree = Node(self.game, None, None)
         self.tree.board_state = self.start_state
     
     def find_node_given_state(self, state):

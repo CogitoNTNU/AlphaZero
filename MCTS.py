@@ -168,29 +168,33 @@ class MCTS:
             node = best_child
         result = self.agent.predict(node.get_board_state())
         node.t = result[1]
+        if game.create_game(node.get_board_state()).player_turn() == 1:
+            node.t = 1-node.t
+
         valid_moves = game.get_moves_from_board_state(node.get_board_state())
         for move in valid_moves:
             Node(node, move, result[0][move])
         node.n += 1
-        self.back_propagate(node)
+        self.back_propagate(node, node.t)
 
-    def back_propagate(self, node):
+    def back_propagate(self, node, t):
         turn = self.level % 2
+        
         if game.create_game(node.get_board_state()).is_final():
             node.t = (game.get_outcome()[turn] + 1) / 2
             if node.get_parent() is not None:
                 (node.get_parent()).n += 1
-                self.back_propagate(node.get_parent())
+                self.back_propagate(node.get_parent(), t)
                 self.level = 0
         elif node.get_parent() is not None:
-            (node.get_parent()).t += node.t
+            (node.get_parent()).t += t
             (node.get_parent()).n += 1
-            self.back_propagate(node.get_parent())
+            self.back_propagate(node.get_parent(), t)
 
     def PUCT(self, node_state, action):
 
         action_state = None
-        for child in node.children:
+        for child in node_state.children:
             if child.get_last_action() == action:
                 action_state = child
 
@@ -212,5 +216,6 @@ for i in range(1000):
     MCTS.search(game)
 print(MCTS.tree.children)
 for i in MCTS.tree.children:
-    print(i.n)
+    print(i.n, i.t)
+
 

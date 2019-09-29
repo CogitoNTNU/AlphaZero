@@ -133,7 +133,7 @@ class ResNet:
         :param chan_dim: Channel dimension
         :param bn_eps: Small float added to avoid divinding by zero
         :param bn_mom: Momentum for the moving axis
-        :return: A matrix between [-1,1] with the state of the game
+        :return: An integer between [-1,1] with the state of the game
         """
 
         conv1 = Conv2D(

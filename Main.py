@@ -14,7 +14,7 @@ import numpy as np
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
-    tree = MCTS.MCTS(game.get_board(), agent)
+    tree = MCTS.MCTS(game, game.get_board(), agent)
     #tree.dirichlet_noise = dirichlet_noise
     #tree.NN_input_dim = config.board_dims
     #tree.policy_output_dim = config.policy_output_dim
@@ -42,10 +42,10 @@ def generate_data(game, agent, config, num_sim=100, games=1000):
         player_moved_list = []
         positions = []
 
-        for i in range(num_sim):
+        while not game.is_final():
             tree.reset_search()
             tree.tree.board_state = game.get_board()
-            tree.search(num_sim)
+            tree.search()
 
             state = game.get_state()
             temp_move = tree.get_temperature_move(state)

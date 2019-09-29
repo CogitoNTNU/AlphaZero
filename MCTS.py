@@ -113,17 +113,17 @@ class MCTS:
         return post_prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
-    def get_temperature_probabilities(self, node_state, T):
+    def get_temperature_probabilities(self, node):
         pi = {}
-        actions = self.get_action_numbers(node_state)
+        actions = self.get_action_numbers(node)
         for action in actions:
-            pi[action] = (actions[action])**(1/T)
+            pi[action] = (actions[action])**(1/self.T)
         return pi    
 
 
     # Returning a random move proportional to the temperature probabilities
-    def get_temperature_move(self, node_state):
-        pi = self.get_temperature_probabilities(node_state, T)
+    def get_temperature_move(self, node):
+        pi = self.get_temperature_probabilities(node)
         pi_sum = 0
         for value in pi:
             pi_sum = pi_sum + value
@@ -141,8 +141,8 @@ class MCTS:
             value = self.agent.predict(board_state)[1]
             return value
 
-    def get_most_searched_move(self, node_state):
-        actions = self.get_action_numbers(node_state)
+    def get_most_searched_move(self, node):
+        actions = self.get_action_numbers(node)
         most_searched_move = 0
         max = -1    
         for action in actions:

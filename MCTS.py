@@ -14,7 +14,7 @@ C_PUCT = math.sqrt(2)
 
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
-    def __init__(self, parent, action, t=0, n=0):
+    def __init__(self, parent, action, probability=0, t=0, n=0):
         self.parent = parent
         if parent:
             parent.add_child(self)
@@ -22,8 +22,9 @@ class Node:
         self.n = n
         self.last_action = action
         if parent:
-            self.board_state = game.create_game(parent.get_board_state()).execute_move(action).get_board()
+            self.board_state = np.flip(game.create_game(parent.get_board_state()).execute_move(action).get_board(), -1)
         self.children = []
+        self.probability = probability
     
     def get_parent(self):
         return self.parent
@@ -37,7 +38,7 @@ class Node:
         return False
     
     def get_board_state(self):
-        return self.board_state
+        return np.copy(self.board_state)
     
     def get_last_action(self):
         return self.last_action
@@ -165,47 +166,40 @@ class MCTS:
                     best_puct = curr_puct
             self.level += 1
             node = best_child
-        node.t = self.agent.predict(node.get_board_state())[1]
+        result = self.agent.predict(node.get_board_state())
+        node.t = result[1]
         valid_moves = game.get_moves_from_board_state(node.get_board_state())
         for move in valid_moves:
-            child = Node(node, move)
+            Node(node, move, result[0][move])
+        node.n += 1
         self.back_propagate(node)
 
     def back_propagate(self, node):
         turn = self.level % 2
         if game.create_game(node.get_board_state()).is_final():
             node.t = (game.get_outcome()[turn] + 1) / 2
-            print(node.get_parent())
-            if node.get_parent() != None:
+            if node.get_parent() is not None:
                 (node.get_parent()).n += 1
                 self.back_propagate(node.get_parent())
                 self.level = 0
-        elif node.parent != None:
+        elif node.get_parent() is not None:
             (node.get_parent()).t += node.t
             (node.get_parent()).n += 1
             self.back_propagate(node.get_parent())
 
-    def PUCT(self, node, action):
-        actions = self.get_action_numbers(node)
-        print("action")
-        print(self.get_action_numbers(node))
+    def PUCT(self, node_state, action):
 
         action_state = None
         for child in node.children:
             if child.get_last_action() == action:
                 action_state = child
 
-        N = actions[action]
-        sum_N_potential_actions = sum(actions.values())
-        print("Summen")
-        print(sum_N_potential_actions)
-        U = C_PUCT * self.get_prior_probabilities(node)*math.sqrt(sum_N_potential_actions)/(1+N)
-        print("U")
-        print(self.get_prior_probabilities(node)*math.sqrt(sum_N_potential_actions)/(1+N))
-        print(self.get_prior_probabilities(node))
+        N = action_state.n
+        sum_N_potential_actions = node_state.n - 1
+        U = C_PUCT * action_state.probability * math.sqrt(sum_N_potential_actions)/(1+N)
 
         if N != 0:
-            Q = action_state.get_total_values()/N
+            Q = action_state.t/N
         else:
             Q = 100000000
         return Q + U
@@ -214,9 +208,9 @@ class MCTS:
 game = TicTacToe()
 agent = agent0()
 MCTS = MCTS(game.get_board(), agent)
-MCTS.search(game)
-MCTS.search(game)
-MCTS.search(game)
+for i in range(1000):
+    MCTS.search(game)
+print(MCTS.tree.children)
 for i in MCTS.tree.children:
     print(i.n)
 

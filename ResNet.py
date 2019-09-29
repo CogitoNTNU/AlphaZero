@@ -1,5 +1,4 @@
 # import the necessary packages
-# import the necessary packages
 from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import AveragePooling2D
@@ -12,98 +11,240 @@ from keras.layers import Input
 from keras.models import Model
 from keras.layers import add
 from keras.regularizers import l2
-from keras import backend as K
+
 
 class ResNet:
     @staticmethod
-    def residual_module(data, filter_num, stride, chan_dim, red=False, reg=0.01, bnEps=2e-5, bnMom=0.9, use_bias=True):
+    def residual_block(data,
+                       filters,
+                       strides,
+                       chan_dim,
+                       red=False,
+                       reg=0.01,
+                       bn_eps=2e-5,
+                       bn_mom=0.9,
+                       use_bias=True):
+        """
+        Residual block based on the AlphaZero paper
+        :param data: Input data
+        :param filters: Number of filter for convolution layer
+        :param strides: Stride for convolution layer
+        :param chan_dim: Channel dimension
+        :param red: Whether to reduce the spatial size
+        :param reg: Kernel regularization
+        :param bn_eps: Small float added to avoid divinding by zero
+        :param bn_mom: Momentum for the moving axis
+        :param use_bias: If use_bias is True, a bias vector is created and added to the outputs
+        :return: Residual block
+        """
         # the shortcut branch of the ResNet module should be
         # initialize as the input (identity) data
         shortcut = data
-    
+
         # the first block of the ResNet module are the 1x1 CONVs
-        bn1 = BatchNormalization(axis=chanDim, epsilon=bnEps, momentum=bnMom)(data)
+        bn1 = BatchNormalization(axis=chan_dim,
+                                 epsilon=bn_eps,
+                                 momentum=bn_mom)(data)
         act1 = Activation("relu")(bn1)
-        conv1 = Conv2D(int(K * 0.25), (1, 1), use_bias=False, 
-            kernel_regularizer=l2(reg))(act1)
-        
-        # the second block of the ResNet module are the 3x3 CONVs
-        bn2 = BatchNormalization(axis=chanDim, epsilon=bnEps, momentum=bnMom)(conv1)
+        conv1 = Conv2D(filters=int(filters * 0.25),
+                       kernel_size=(1, 1),
+                       use_bias=False,
+                       kernel_regularizer=l2(reg)
+                       )(act1)
+
+        # The second block of the ResNet module are the 3x3 CONVs
+        bn2 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv1)
         act2 = Activation("relu")(bn2)
-        conv2 = Conv2D(int(K * 0.25), (3, 3), strides=stride, padding="same", use_bias=False, 
-            kernel_regularizer=l2(reg)(act2)
+        conv2 = Conv2D(
+            filters=int(filters * 0.25),
+            kernel_size=(3, 3),
+            strides=strides,
+            padding="same",
+            use_bias=False,
+            kernel_regularizer=l2(reg)
+        )(act2)
 
         # the third block of the ResNet module is another set of 1x1 CONVs
-        bn3 = BatchNormalization(axis=chanDim, epsilon=bnEps,momentum=bnMom)(conv2)
+        bn3 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv2)
         act3 = Activation("relu")(bn3)
-        conv3 = Conv2D(K, (1, 1), use_bias=False, kernel_regularizer=l2(reg))(act3)
+        conv3 = Conv2D(
+            filters=filters,
+            kernel_size=(1, 1),
+            use_bias=False,
+            kernel_regularizer=l2(reg)
+        )(act3)
 
         # if we are to reduce the spatial size, apply a CONV layer to the shortcut
         if red:
-        shortcut = Conv2D(K, (1, 1), strides=stride, use_bias=False, 
-                kernel_regularizer=l2(reg))(act1)
+            shortcut = Conv2D(
+                filters=filters,
+                kernel_size=(1, 1),
+                strides=strides,
+                use_bias=False,
+                kernel_regularizer=l2(reg)
+            )(act1)
 
-        # add together the shortcut and the final CONV
+        # Add together the shortcut and the final convolutional layer
         x = add([conv3, shortcut])
 
-        # return the addition as the output of the ResNet module
+        # Return the addition as the output of the ResNet module
         return x
 
     @staticmethod
-    def build(height, width, depth, num_filters, policy_output_dim, reg=0.01, bnEps=2e-5, bnMom=0.9, num_res_blocks=19,
+    def policy_head(data,
+                    chan_dim,
+                    policy_output_dim,
+                    bn_eps,
+                    bn_mom):
+        """
+        Policy head:
+        :param data: Input tensor
+        :param chan_dim: Channel dimension
+        :param policy_output_dim: Dimension of policy output
+        :param bn_eps: Small float added to avoid divinding by zero
+        :param bn_mom: Momentum for the moving axis
+        :return: Matrix of percentages for different moves
+        """
+        conv1 = Conv2D(
+            filters=2,
+            kernel_size=(1, 1),
+            strides=(1, 1),
+            use_bias=False,
+        )(data)
+        bn1 = BatchNormalization(
+            axis=chan_dim,
+            epsilon=bn_eps,
+            momentum=bn_mom)(conv1)
+        act1 = Activation("relu")(bn1)
+        x = Flatten()(act1)
+        dn1 = Dense(
+            policy_output_dim,
+            activation='linear')(x)
+        return dn1
+
+    @staticmethod
+    def value_head(data,
+                   chan_dim,
+                   bn_eps,
+                   bn_mom):
+        """
+        Value head: gives out the state of the board
+        :param data: Input tensor
+        :param chan_dim: Channel dimension
+        :param bn_eps: Small float added to avoid divinding by zero
+        :param bn_mom: Momentum for the moving axis
+        :return: An integer between [-1,1] with the state of the game
+        """
+
+        conv1 = Conv2D(
+            filters=1,
+            kernel_size=(1, 1),
+            strides=(1, 1),
+            use_bias=False,
+        )(data)
+        bn1 = BatchNormalization(
+            axis=chan_dim,
+            epsilon=bn_eps,
+            momentum=bn_mom)(conv1)
+        act1 = Activation("relu")(bn1)
+        x = Flatten()(act1)
+        dn1 = Dense(
+            256,
+            activation='relu')(x)
+        dn2 = Dense(
+            1,
+            activation='tanh'
+        )(dn1)
+        return dn2
+
+    @staticmethod
+    def build(height,
+              width,
+              depth,
+              filters,
+              policy_output_dim,
+              reg=0.01,
+              bn_eps=2e-5,
+              bn_mom=0.9,
+              num_res_blocks=19,
               use_bias=True):
-        # initialize the input shape to be "channels last" and the
+        """
+        Build method for ResNet
+        :param height: Height of input
+        :param width: Width of input
+        :param depth: Channel dimension (Depth of input)
+        :param filters: Number of filters
+        :param policy_output_dim: The number of possible moves (Classes)
+        :param reg: Kernel regularization
+        :param bn_eps: Small float added to avoid divinding by zero
+        :param bn_mom: Momentum for the moving axis
+        :param num_res_blocks: Number of residual block
+        :param use_bias: If use_bias is True, a bias vector is created and added to the outputs
+        :return: ResNet model
+        """
+        # Initialize the input shape to be "channels last" and the
         # channels dimension itself
         inputShape = (height, width, depth)
-        chanDim = -1
+        chan_dim = -1
 
-        # if we are using "channels first", update the input shape
-        # and channels dimension
-        if K.image_data_format() == "channels_first":
-            inputShape = (depth, height, width)
-            chanDim = 1
+        # Set the input and apply BN
+        input_data = Input(shape=inputShape)
 
-        # set the input and apply BN
-		inputs = Input(shape=inputShape)
-		x = BatchNormalization(axis=chanDim, epsilon=bnEps,
-			momentum=bnMom)(inputs)
-
-		# apply CONV => BN => ACT => POOL to reduce spatial size
-		x = Conv2D(filters[0], (5, 5), use_bias=False,
-			padding="same", kernel_regularizer=l2(reg))(x)
-		x = BatchNormalization(axis=chanDim, epsilon=bnEps,
-			momentum=bnMom)(x)
-		x = Activation("relu")(x)
-		x = ZeroPadding2D((1, 1))(x)
-		x = MaxPooling2D((3, 3), strides=(2, 2))(x)
-
-        # loop over the number of stages
-        for i in range(0, len(stages)):
-            # initialize the stride, then apply a residual module
-            # used to reduce the spatial size of the input volume
-            stride = (1, 1) if i == 0 else (2, 2)
-            x = ResNet.residual_module(x, filters[i + 1], stride,
-                    chanDim, red=True, bnEps=bnEps, bnMom=bnMom)
-
-            # loop over the number of layers in the stage
-            for j in range(0, stages[i] - 1):
-                # apply a ResNet module
-                x = ResNet.residual_module(x, filters[i + 1],
-                    (1, 1), chanDim, bnEps=bnEps, bnMom=bnMom)
-
-        # apply BN => ACT => POOL
-        x = BatchNormalization(axis=chanDim, epsilon=bnEps,
-                momentum=bnMom)(x)
+        # Apply CONV => BN => ACT => POOL to reduce spatial size
+        x = Conv2D(
+            filters=filters,
+            kernel_size=(3, 3),
+            strides=(1, 1),
+            use_bias=False,
+            padding="same",
+            kernel_regularizer=l2(reg)
+        )(input_data)
+        x = BatchNormalization(
+            axis=chan_dim,
+            epsilon=bn_eps,
+            momentum=bn_mom
+        )(x)
         x = Activation("relu")(x)
-        x = AveragePooling2D((8, 8))(x)
-        
-        # softmax classifier
-        x = Flatten()(x)
-        x = Dense(classes, kernel_regularizer=l2(reg))(x)
-        x = Activation("softmax")(x)
-        
+
+        # Add num_res_blocks to the model
+        for _ in range(num_res_blocks):
+            x = ResNet.residual_block(
+                data=x,
+                filters=256,
+                strides=(1, 1),
+                chan_dim=chan_dim,
+            )
+
+        # Policy head
+        pol_head = ResNet.policy_head(x,
+                                      chan_dim=chan_dim,
+                                      policy_output_dim=policy_output_dim,
+                                      bn_eps=bn_eps,
+                                      bn_mom=bn_mom)
+
+        # Value head
+        val_head = ResNet.value_head(x,
+                                     chan_dim=chan_dim,
+                                     bn_eps=bn_eps,
+                                     bn_mom=bn_mom)
+
         # create the model
-        model = Model(inputs, x, name="resnet")
-        
+        model = Model(input_data, [pol_head, val_head], name="resnet")
+
         # return the constructed network architecture
         return model
+
+    def get_resnet(self):
+        """
+        Method for return the model
+        :return: ResNet model
+        """
+        return self.build(height=6,
+                          width=7,
+                          depth=2,
+                          filters=256,
+                          policy_output_dim=7)
+
+
+resnet = ResNet()
+model_resnet = resnet.get_resnet()

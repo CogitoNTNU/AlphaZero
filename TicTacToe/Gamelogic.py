@@ -36,7 +36,7 @@ class TicTacToe:
         # return moves
 
     def execute_move(self, move):
-        self.board[move // 3, move % 3, self.player_turn()] = 1
+        self.board[move // 3, move % 3, 0] = 1
         self.history.append(move)
         # poss_moves = self.get_moves()
         # if move in poss_moves:
@@ -84,6 +84,7 @@ class TicTacToe:
             return True
         if self.board[0, 2, player] == self.board[1, 1, player] == self.board[2, 0, player] != 0:
             return True
+        return False
 
     def is_final(self):
         if self._won():
@@ -119,7 +120,7 @@ class TicTacToe:
         return len(self.history) % 2 if not self.is_final() else None
 
     def get_board(self):
-        return self.board if len(self.history) % 2 == 0 else np.flip(self.board, -1)
+        return np.copy(self.board) #if len(self.history) % 2 == 0 else np.copy(np.flip(self.board, -1))
 
     def create_game(self, board_state):
         self.board = board_state

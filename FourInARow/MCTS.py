@@ -3,7 +3,7 @@ import time
 import random
 import numpy as np
 # from Othello import Gamelogic
-from TicTacToe import Gamelogic
+from FourInARow import Gamelogic
 #import loss
 import collections
 

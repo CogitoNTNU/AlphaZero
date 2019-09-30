@@ -49,6 +49,8 @@ class FourInARow:
         else:
             print('Illegal move')
 
+        return self
+
     def undo_move(self):
         """ Undoes the last move. """
         if len(self.history) > 0 or self.history[-1] is None:
@@ -144,7 +146,25 @@ class FourInARow:
                 string += ' ' * int(self.board[y, x, 0] == self.board[y, x, 1] == 0)
                 string += '|'
             print(string)
+    
+    def player_turn(self):
+        p1 = 0
+        p2 = 0
+        for row in self.board:
+            for rute in row:
+                if rute[0] == 1:
+                    p1 += 1
+                elif rute[1] == 1:
+                    p2 += 1
+        if p1 == p2:
+            return 0
+        else:
+            return 1
 
+
+    def get_moves_from_board_state(self,board):
+        game = self.create_game(board)
+        return game.get_moves()
 
     @classmethod
     def create_game(cls, state):

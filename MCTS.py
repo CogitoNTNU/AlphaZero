@@ -4,11 +4,14 @@ import random
 import numpy as np
 import random
 # from Othello import Gamelogic
+from TicTacToe.Config import policy_output_dim
 from TicTacToe.Gamelogic import TicTacToe
+from FourInARow.Gamelogic import FourInARow
+from FourInARow.Config import policy_output_dim
+
 #import loss
 import collections
 from FakeNN import agent0
-from TicTacToe.Config import policy_output_dim
 
 C_PUCT = math.sqrt(2)
 
@@ -90,7 +93,10 @@ class MCTS:
 
     # Returning a dictionary with action as key and visit number as value
     def get_action_numbers(self, node):
-        action_numbers = [0] * policy_output_dim
+        action_numbers = {}
+        for i in range(policy_output_dim):
+            action_numbers[i] = 0
+        
         for child in node.children:
             action_numbers[child.last_action] = child.get_times_visited()
         return action_numbers   
@@ -145,6 +151,7 @@ class MCTS:
         actions = self.get_action_numbers(node)
         most_searched_move = 0
         max = -1    
+        print(actions)
         for action in actions:
             if actions[action] > max:
                 most_searched_move = action
@@ -183,7 +190,7 @@ class MCTS:
     def back_propagate(self, node, t):
         turn = self.level % 2
         game = self.game
-        if game.create_game(node.get_board_state()).is_final():
+        if game.get_outcome() != None:
             node.t = (game.get_outcome()[turn] + 1) / 2
             if node.get_parent() is not None:
                 (node.get_parent()).n += 1
@@ -194,13 +201,13 @@ class MCTS:
             (node.get_parent()).n += 1
             self.back_propagate(node.get_parent(), t)
 
-    def PUCT(self, node_state, action):
-        for child in node_state.children:
+    def PUCT(self, node, action):
+        for child in node.children:
             if child.get_last_action() == action:
                 action_state = child
 
         N = action_state.n
-        sum_N_potential_actions = node_state.n - 1
+        sum_N_potential_actions = node.n - 1
         U = C_PUCT * action_state.probability * math.sqrt(sum_N_potential_actions)/(1+N)
 
         if N != 0:
@@ -210,12 +217,10 @@ class MCTS:
         return Q + U
 
 
-game = TicTacToe()
-agent = agent0()
-MCTS = MCTS(game, game.get_board(), agent)
-for i in range(400):
-    MCTS.search()
-print(MCTS.tree.children)
-for j in MCTS.tree.children[2].children:
-    print(j.n, j.t)
-
+#game = FourInARow()
+#agent = agent0()
+#MCTS = MCTS(game, game.get_board(), agent)
+#MCTS.search_series(800)
+#print(MCTS.get_most_searched_move(MCTS.tree))
+#print(MCTS.evaluate(MCTS.tree.get_board_state,0))
+#print(MCTS.tree.n)

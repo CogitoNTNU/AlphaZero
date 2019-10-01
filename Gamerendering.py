@@ -1,5 +1,5 @@
-from TicTacToe import Gamelogic
-from TicTacToe import Config
+from FourInARow import Gamelogic
+from FourInARow import Config
 import pygame
 import sys
 
@@ -11,8 +11,8 @@ class TicTacToeRendering:
         self.game = game
         self.side_length = 50
         self.line_th = 5
-        self.height = 3
-        self.width = 3
+        self.height = 7
+        self.width = 6
         #self.extrawidth = 150
         self.image = pygame.image.load("nevraltnett.png")
         self.imagerect = self.image.get_size()
@@ -22,6 +22,11 @@ class TicTacToeRendering:
         self.background_color=(0, 109, 50)
         self.piece_size = 20
         self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0], max(self.side_length * self.height + self.line_th,self.imagerect[1])])
+
+        self._render_background()
+        self._render_pieces()
+        self._render_possible_moves()
+        pygame.display.flip()
         while True:
             self.mouse_pos = pygame.mouse.get_pos()
             for event in pygame.event.get():
@@ -29,12 +34,16 @@ class TicTacToeRendering:
                     sys.exit()
                 elif pygame.mouse.get_pressed()[0] and self.mouse_pos[0] < self.side_length * self.width + self.line_th and self.mouse_pos[1] < self.side_length * self.height + self.line_th: #Sjekk om musen er innenfor brettet
                     self.execute_move()
+                    self._render_background()
+                    self._render_pieces()
+                    self._render_possible_moves()
+                    pygame.display.flip()
                 elif pygame.key.get_pressed()[32]:
                     self.game.undo_move()
-                self._render_background()
-                self._render_pieces()
-                self._render_possible_moves()
-                pygame.display.flip()
+                    self._render_background()
+                    self._render_pieces()
+                    self._render_possible_moves()
+                    pygame.display.flip()
 
     def _render_background(self):
         self.screen.fill(self.background_color)
@@ -68,4 +77,4 @@ class TicTacToeRendering:
         self.game.execute_move(Config.number_to_move((self.mouse_pos[0] - 2) // self.side_length * 3 + (self.mouse_pos[1] - 2) // self.side_length))#må generaliseres
 
 
-rendering = TicTacToeRendering(Gamelogic.TicTacToe())
+rendering = TicTacToeRendering(Gamelogic.FourInARow())

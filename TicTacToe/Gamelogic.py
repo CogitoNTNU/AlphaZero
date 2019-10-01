@@ -36,14 +36,14 @@ class TicTacToe:
         # return moves
 
     def execute_move(self, move):
-        self.board[move // 3, move % 3, 0] = 1
-        self.history.append(move)
-        # poss_moves = self.get_moves()
-        # if move in poss_moves:
-        #     self.board[move // 3, move % 3, len(self.history) % 2] = 1
-        #     self.history.append(move)
-        # else:
-        #     print('illegal move')
+        # self.board[move // 3, move % 3, 0] = 1
+        # self.history.append(move)
+        poss_moves = self.get_moves()
+        if move in poss_moves:
+            self.board[move // 3, move % 3, len(self.history) % 2] = 1
+            self.history.append(move)
+        else:
+            print('illegal move')
         return self
     
     def player_turn(self):

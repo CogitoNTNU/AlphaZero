@@ -8,11 +8,12 @@ class TicTacToeRendering:
 
     def __init__(self, game):
         pygame.init()
+        self.tictactoe=False #fikser koden slik at den fungerer på TicTacToe
         self.game = game
         self.side_length = 50
         self.line_th = 5
-        self.height = 7
-        self.width = 6
+        self.height = Config.board_dims[1]
+        self.width = Config.board_dims[2]
         #self.extrawidth = 150
         self.image = pygame.image.load("nevraltnett.png")
         self.imagerect = self.image.get_size()
@@ -58,23 +59,26 @@ class TicTacToeRendering:
         board = self.game.board
         for x in range(self.width):
             for y in range(self.height):
-                if board[x, y, 1] == 1:
+                if board[self.height - y - 1, x, 0] == 1:
                     pygame.draw.circle(self.screen, self.white,
                                        [(self.side_length + self.line_th) // 2 + self.side_length * x, (self.side_length + self.line_th) // 2 + self.side_length * y], self.piece_size)
-                elif board[x, y, 0] == 1:
+                elif board[self.height - y - 1, x, 1] == 1:
                     pygame.draw.circle(self.screen, self.black, [(self.side_length + self.line_th) // 2 + self.side_length * x, (self.side_length + self.line_th) // 2 + self.side_length * y],
                                        self.piece_size)
 
     def _render_possible_moves(self):
         possible_moves = self.game.get_moves()
         for move in possible_moves:
-            pygame.draw.circle(self.screen, self.move_color, [(self.side_length + self.line_th) // 2 + self.side_length * (Config.move_to_number(move)//3), (self.side_length + self.line_th) // 2 + self.side_length * (Config.move_to_number(move) % 3)], self.piece_size)
+            if self.tictactoe:
+                move = (self.width * self.height) - (move)//self.width * self.width + (move) % self.width-self.width
+            pygame.draw.circle(self.screen, self.move_color, [ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width),(self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move))//self.width)], self.piece_size)
 
     def render(self):
         pass
 
     def execute_move(self):
-        self.game.execute_move(Config.number_to_move((self.mouse_pos[0] - 2) // self.side_length * 3 + (self.mouse_pos[1] - 2) // self.side_length))#må generaliseres
-
+        if self.tictactoe:
+            self.mouse_pos=(self.mouse_pos[0],self.height*self.side_length-self.mouse_pos[1])
+        self.game.execute_move(Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
 
 rendering = TicTacToeRendering(Gamelogic.FourInARow())

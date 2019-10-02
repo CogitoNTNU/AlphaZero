@@ -80,4 +80,17 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=100, ga
     return agent
 
 
+def choose_best_legal_move(legal_moves, y_pred):
+    best_move = np.argmax(y_pred)
+    print("Best move", best_move)
+    if(y_pred[best_move] == 0):
+        return None
+    if best_move in legal_moves:
+        return best_move
+    else:
+        y_pred[best_move] = 0
+        print(y_pred)
+        return choose_best_legal_move(legal_moves, y_pred)
+
+
 train(Gamelogic.TicTacToe(), Config, 128, 4)

@@ -97,7 +97,7 @@ class ResNet:
                     bn_eps,
                     bn_mom):
         """
-        Policy head:
+        Policy head gives out the predictions for the possible actions
         :param data: Input tensor
         :param chan_dim: Channel dimension
         :param policy_output_dim: Dimension of policy output
@@ -234,16 +234,27 @@ class ResNet:
         # return the constructed network architecture
         return model
 
-    def get_resnet(self):
+    def get_resnet_4_in_a_row(self):
         """
-        Method for return the model
-        :return: ResNet model
+        Method for return the model for 4 in a row
+        :return: ResNet model for 4 in a row
         """
         return self.build(height=6,
                           width=7,
                           depth=2,
                           filters=256,
                           policy_output_dim=7)
+
+    def get_resnet_tictactoe(self):
+        """
+        Method for returning model for tictactoe
+        :return: ResNet model for tictactoe.
+        """
+        return self.build(height=3,
+                          width=3,
+                          depth=2,
+                          filters=256,
+                          policy_output_dim=9)
 
 
 resnet = ResNet()

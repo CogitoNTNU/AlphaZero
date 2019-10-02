@@ -1,14 +1,22 @@
-from FourInARow import Gamelogic
-from FourInARow import Config
+import importlib
 import pygame
 import sys
 
+#Endre denne for å endre spill
+Game = "FourInARow"
 
-class TicTacToeRendering:
+sys.path.insert(0, './'+Game)
+Config = importlib.import_module("Config", package=Game)
+logic = importlib.import_module("Gamelogic", package=Game)
+
+class GameRendering:
 
     def __init__(self, game):
         pygame.init()
-        self.tictactoe=False #fikser koden slik at den fungerer på TicTacToe
+        if Game == "TicTacToe":
+            self.tictactoe=True #fikser koden slik at den fungerer på TicTacToe
+        else:
+            self.tictactoe=False
         self.game = game
         self.side_length = 50
         self.line_th = 5
@@ -81,4 +89,5 @@ class TicTacToeRendering:
             self.mouse_pos=(self.mouse_pos[0],self.height*self.side_length-self.mouse_pos[1])
         self.game.execute_move(Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
 
-rendering = TicTacToeRendering(Gamelogic.FourInARow())
+
+rendering = GameRendering(eval("logic." + Game + "()"))

@@ -213,6 +213,7 @@ class ResNet:
                 filters=256,
                 strides=(1, 1),
                 chan_dim=chan_dim,
+                red=True
             )
 
         # Policy head

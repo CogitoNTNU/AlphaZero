@@ -11,7 +11,7 @@ from FourInARow.Config import policy_output_dim
 
 #import loss
 import collections
-#from FakeNN import agent0
+from FakeNN import agent0
 from TicTacToe.Config import policy_output_dim
 
 C_PUCT = math.sqrt(2)
@@ -20,17 +20,21 @@ C_PUCT = math.sqrt(2)
 # OBS: when the game is over it the algorithm expects that it is none to move
 class Node:
     def __init__(self, game, parent, action, probability=0, t=0, n=0):
-        self.parent = parent
-        self.game = game
-        self.t = t
-        self.n = n
-        self.last_action = action
-        self.children = []
-        self.probability = probability
-        if parent:
-            parent.add_child(self)
-        if parent:
-            self.board_state = np.flip(self.game.create_game(parent.get_board_state()).execute_move(action).get_board(), -1)
+        self.parent = parent    #This nodes parent
+        self.game = game    #The game played
+        self.t = t      #Sum of values from all tree searches through this node
+        self.n = n      #Sum of visits from all tree searches through this node
+        self.last_action = action   #action from parent board state to current board state
+        self.children = []     #List of children nodes
+        self.probability = probability  #The probability of choosing this node from the parent node
+        if parent:   
+            parent.add_child(self)  #adds this node to the parents list of childs
+            self.game.execute_move(action)  #executes the move for this node
+            self.board_state = self.game.get_board()  #sets the board state for this node
+            self.turn = self.game.get_turn()
+            self.game.undo_move() #resets the games board state 
+        else:
+            self.turn = game.get_turn()
 
     def get_parent(self):
         return self.parent
@@ -59,33 +63,34 @@ class Node:
 class MCTS:
     
     def __init__(self, game, start_state, agent):
-        self.tree = Node(game, None, None)
+        self.root = Node(game, None, None)
         self.game = game
-        self.tree.board_state = start_state
+        self.root.board_state = start_state
         self.start_state = start_state
         self.agent = agent
         self.T = 1
         self.level = 0
 
     def reset_search(self):
-        self.tree = Node(self.game, None, None)
-        self.tree.board_state = self.start_state
+        self.root = Node(self.game, None, None)
+        self.root.board_state = self.start_state
+    
+    @staticmethod   
+    def search_nodechildren_for_state(node, state):
+        if node.get_board_state() == state:
+            return node
+        if not node.is_leaf_node():
+            possible_correct = None
+            for child in node.children:
+                possible_correct = MCTS.search_nodechildren_for_state(child,state)
+                if not possible_correct == None:
+                    return possible_correct
+        
     
     def find_node_given_state(self, state):
         correct = None
-        start = self.tree
-
-        def search_nodechildren_for_state(self, node, state):
-            if node.get_board_state() == state:
-                return node
-            if not node.is_leaf_node():
-                possible_correct = None
-                for child in node.children:
-                    possible_correct = self.search_nodechildren_for_state(child,state)
-                    if not possible_correct == None:
-                        return possible_correct
-        
-        correct = search_nodechildren_for_state(self, start,state)
+        start = self.root
+        correct = MCTS.search_nodechildren_for_state(start,state)
         return correct
 
 
@@ -109,8 +114,8 @@ class MCTS:
 
     # Returning the posterior search probabilities of the search,
     # meaning that the percentages is calculated by: num_exec/total
-    def get_posterior_probabilities(self, board_state):
-        node = self.find_node_given_state(board_state)
+    def get_posterior_probabilities(self):
+        node = self.root
         tot = 0
         post_prob = {}
         actions = self.get_action_numbers(node)
@@ -168,62 +173,54 @@ class MCTS:
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
         game = self.game
-        node = self.tree
-        while not node.is_leaf_node():
+        parent = self.root
+        while not parent.is_leaf_node():
             best_puct = 0
-            for n in node.children:
-                curr_puct = self.PUCT(node, n.last_action)
+            for child in parent.children:
+                curr_puct = self.PUCT(parent, child)
                 if (curr_puct >= best_puct):
-                    best_child = n
+                    best_child = child
                     best_puct = curr_puct
             self.level += 1
-            node = best_child
-        result = self.agent.predict(np.array([node.get_board_state()]))
-        print(result)
-        node.t = result[1][0][0]
-        if game.create_game(node.get_board_state()).player_turn() == 1:
-            node.t = 1-node.t
+            parent = best_child
+        result = self.agent.predict(np.array([parent.get_board_state()]))
 
-        valid_moves = game.get_moves_from_board_state(node.get_board_state())
+
+        valid_moves = game.get_moves_from_board_state(parent.get_board_state())
         for move in valid_moves:
-            Node(game, node, move, result[0][0][move])
-        node.n += 1
-        self.back_propagate(node, node.t)
+            Node(game, parent, move, result[0][move])
+        parent.n += 1
+        self.back_propagate(parent, result[1])
+        self.level = 0
 
     def back_propagate(self, node, t):
-        turn = self.level % 2
         game = self.game
-        if game.get_outcome() != None:
-            node.t = (game.get_outcome()[turn] + 1) / 2
-            if node.get_parent() is not None:
-                (node.get_parent()).n += 1
-                self.back_propagate(node.get_parent(), t)
-                self.level = 0
-        elif node.get_parent() is not None:
-            (node.get_parent()).t += t
-            (node.get_parent()).n += 1
-            self.back_propagate(node.get_parent(), t)
-
-    def PUCT(self, node, action):
-        for child in node.children:
-            if child.get_last_action() == action:
-                action_state = child
-
-        N = action_state.n
-        sum_N_potential_actions = node.n - 1
-        U = C_PUCT * action_state.probability * math.sqrt(sum_N_potential_actions)/(1+N)
-
-        if N != 0:
-            Q = action_state.t/N
+        if game.is_final():
+            node.t = (game.get_outcome()[node.turn])
         else:
-            Q = 100000000
+            node.t += t
+            node.n += 1
+        
+        if node.get_parent() is not None:
+            self.back_propagate(node.get_parent(), -t)
+
+    def PUCT(self, node, child):
+        N = child.n + 1
+        sum_N_potential_actions = node.n - 1
+        U = C_PUCT * child.probability * math.sqrt(sum_N_potential_actions)/(1+N)
+        Q = child.t/N
         return Q + U
 
 
-#game = FourInARow()
-#agent = agent0()
-#MCTS = MCTS(game, game.get_board(), agent)
-#MCTS.search_series(800)
-#print(MCTS.get_most_searched_move(MCTS.tree))
-#print(MCTS.evaluate(MCTS.tree.get_board_state,0))
-#print(MCTS.tree.n)
+game = FourInARow()
+for x in range(5):
+    game.execute_move(2)
+agent = agent0()
+MCTS = MCTS(game, game.get_board(), agent)
+MCTS.search_series(100)
+print(MCTS.get_most_searched_move(MCTS.root))
+#print(MCTS.evaluate(MCTS.root.get_board_state,0))
+print(MCTS.get_posterior_probabilities())
+for children in MCTS.root.children:
+    print(children.t)
+

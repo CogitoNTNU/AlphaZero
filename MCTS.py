@@ -137,15 +137,12 @@ class MCTS:
     # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, node):
         pi = self.get_temperature_probabilities(node)
-        pi_sum = 0
-        for value in pi:
-            pi_sum = pi_sum + value
-        choice = np.random.uniform(0, pi_sum)
-        tellesum = 0
-        for i in range(0, len(pi)):
-            tellesum = tellesum + pi[i]
-            if choice < tellesum:
-                return i
+        moves = [move for move in pi.keys()]
+        probs = [pi[key] for key in moves]
+        probs = np.array(probs)
+        probs = probs/sum(probs)
+        return np.random.choice(moves, p=probs)
+           
     
     def evaluate(self, board_state, to_play):
         if to_play != 0:

@@ -7,6 +7,8 @@ import Files
 # from Othello import Gamelogic
 from TicTacToe import Gamelogic
 from TicTacToe import Config
+from keras.optimizers import SGD
+from loss import softmax_cross_entropy_with_logits, softmax
 
 # Importing other libraries
 import numpy as np
@@ -45,7 +47,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
         while not game.is_final():
             tree.reset_search()
             tree.root.board_state = game.get_board()
-            tree.search_series(20)
+            tree.search_series(2)
 
             state = game.get_state()
             temp_move = tree.get_temperature_move(tree.root)
@@ -56,6 +58,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
             positions.append(np.array(game.get_board()))
 
             game.execute_move(temp_move)
+            
 
 
         game_outcome = game.get_outcome()
@@ -74,6 +77,7 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=100, ga
 
     h, w, d = config.board_dims[1:]
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
+    agent.compile(loss = [softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
 
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)

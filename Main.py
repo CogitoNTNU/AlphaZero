@@ -44,14 +44,14 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
         while not game.is_final():
             tree.reset_search()
-            tree.tree.board_state = game.get_board()
-            tree.search()
+            tree.root.board_state = game.get_board()
+            tree.search_series(20)
 
             state = game.get_state()
-            temp_move = tree.get_temperature_move(tree.tree)
+            temp_move = tree.get_temperature_move(tree.root)
 
             history.append(temp_move)
-            policy_targets.append(np.array(tree.get_posterior_probabilities(tree.tree)))
+            policy_targets.append(np.array(tree.get_posterior_probabilities()))
             player_moved_list.append(game.get_turn())
             positions.append(np.array(game.get_board()))
 

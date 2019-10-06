@@ -119,7 +119,7 @@ class ResNet:
         x = Flatten()(act1)
         dn1 = Dense(
             policy_output_dim,
-            activation='linear')(x)
+            activation='softmax')(x)
         return dn1
 
     @staticmethod
@@ -258,5 +258,4 @@ class ResNet:
                           policy_output_dim=9)
 
 
-resnet = ResNet()
-model_resnet = resnet.get_resnet()
+

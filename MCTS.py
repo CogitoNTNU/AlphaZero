@@ -171,6 +171,7 @@ class MCTS:
             self.search()
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
+    #TODO ikke lage noder når game er over  
     def search(self):
         game = self.game
         parent = self.root
@@ -183,15 +184,19 @@ class MCTS:
                     best_puct = curr_puct
             self.level += 1
             parent = best_child
+            self.game.execute_move(best_child.last_action)
         result = self.agent.predict(np.array([parent.get_board_state()]))
 
-
-        valid_moves = game.get_moves_from_board_state(parent.get_board_state())
-        for move in valid_moves:
-            Node(game, parent, move, result[0][move])
-        parent.n += 1
-        self.back_propagate(parent, result[1])
-        self.level = 0
+        if not self.game.is_final():
+            valid_moves = game.get_moves_from_board_state(parent.get_board_state())
+            for move in valid_moves:
+                print(result)
+                Node(game, parent, move, result[0][0][move])
+            parent.n += 1
+            self.back_propagate(parent, result[1][0][0])
+            self.level = 0
+        else:
+            print("ferdig")
 
     def back_propagate(self, node, t):
         game = self.game
@@ -202,6 +207,7 @@ class MCTS:
             node.n += 1
         
         if node.get_parent() is not None:
+            game.undo_move()
             self.back_propagate(node.get_parent(), -t)
 
     def PUCT(self, node, child):
@@ -211,16 +217,4 @@ class MCTS:
         Q = child.t/N
         return Q + U
 
-
-game = FourInARow()
-for x in range(5):
-    game.execute_move(2)
-agent = agent0()
-MCTS = MCTS(game, game.get_board(), agent)
-MCTS.search_series(100)
-print(MCTS.get_most_searched_move(MCTS.root))
-#print(MCTS.evaluate(MCTS.root.get_board_state,0))
-print(MCTS.get_posterior_probabilities())
-for children in MCTS.root.children:
-    print(children.t)
 

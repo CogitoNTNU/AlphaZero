@@ -73,7 +73,7 @@ class MCTS:
 
     def reset_search(self):
         self.root = Node(self.game, None, None)
-        self.root.board_state = self.start_state
+        self.root.board_state = self.game.get_board()
     
     @staticmethod   
     def search_nodechildren_for_state(node, state):
@@ -190,18 +190,19 @@ class MCTS:
         if not self.game.is_final():
             valid_moves = game.get_moves_from_board_state(parent.get_board_state())
             for move in valid_moves:
-                print(result)
                 Node(game, parent, move, result[0][0][move])
             parent.n += 1
             self.back_propagate(parent, result[1][0][0])
             self.level = 0
         else:
-            print("ferdig")
+            parent.n += 1
+            self.back_propagate(parent, result[1][0][0])
+            self.level = 0
 
     def back_propagate(self, node, t):
         game = self.game
         if game.is_final():
-            node.t = (game.get_outcome()[node.turn])
+            node.t = (game.get_outcome()[node.parent.turn])
         else:
             node.t += t
             node.n += 1
@@ -216,5 +217,7 @@ class MCTS:
         U = C_PUCT * child.probability * math.sqrt(sum_N_potential_actions)/(1+N)
         Q = child.t/N
         return Q + U
+    
+
 
 

@@ -43,7 +43,7 @@ class TicTacToe:
             self.board[move // 3, move % 3, len(self.history) % 2] = 1
             self.history.append(move)
         else:
-            print('illegal move')
+            print('illegal move', move, self.history)
         return self
     
     def player_turn(self):

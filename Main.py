@@ -7,6 +7,8 @@ import Files
 # from Othello import Gamelogic
 from TicTacToe import Gamelogic
 from TicTacToe import Config
+from keras.optimizers import SGD
+from loss import softmax_cross_entropy_with_logits, softmax
 
 # Importing other libraries
 import numpy as np
@@ -44,18 +46,19 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
         while not game.is_final():
             tree.reset_search()
-            tree.tree.board_state = game.get_board()
-            tree.search()
+            tree.root.board_state = game.get_board()
+            tree.search_series(2)
 
             state = game.get_state()
-            temp_move = tree.get_temperature_move(tree.tree)
+            temp_move = tree.get_temperature_move(tree.root)
 
             history.append(temp_move)
-            policy_targets.append(np.array(tree.get_posterior_probabilities(tree.tree)))
+            policy_targets.append(np.array(tree.get_posterior_probabilities()))
             player_moved_list.append(game.get_turn())
             positions.append(np.array(game.get_board()))
 
             game.execute_move(temp_move)
+            
 
 
         game_outcome = game.get_outcome()
@@ -69,11 +72,12 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=100, games_each_epoch=1000,
+def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=10, games_each_epoch=100,
           batch_size=64, num_train_epochs=1):
 
     h, w, d = config.board_dims[1:]
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
+    agent.compile(loss = [softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
 
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
@@ -82,6 +86,19 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=100, ga
         agent.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
 
     return agent
+
+
+def choose_best_legal_move(legal_moves, y_pred):
+    best_move = np.argmax(y_pred)
+    print("Best move", best_move)
+    if(y_pred[best_move] == 0):
+        return None
+    if best_move in legal_moves:
+        return best_move
+    else:
+        y_pred[best_move] = 0
+        print(y_pred)
+        return choose_best_legal_move(legal_moves, y_pred)
 
 
 train(Gamelogic.TicTacToe(), Config, 128, 4)

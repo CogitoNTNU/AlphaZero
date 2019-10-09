@@ -9,11 +9,11 @@ from TicTacToe import Gamelogic
 from TicTacToe import Config
 from keras.optimizers import SGD
 from loss import softmax_cross_entropy_with_logits, softmax
-i
+
 # Importing other libraries
 import numpy as np
 import multiprocessing
-
+#from pathos.multiprocessing import ProcessingPool as Pool
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
@@ -27,52 +27,44 @@ def get_tree(config, agent, game, dirichlet_noise=True):
     #tree.set_evaluation(agent)
     #tree.set_game(game)
     return tree
+    
+def get_game_object():
+    return Gamelogic.TicTacToe()
 
 def generate_game(config, agent):
-    tree = get_tree(config, agent, Gamelogic.TicTacToe())
+    tree = get_tree(config, agent, get_game_object())
 
+    history = []
+    policy_targets = []
+    player_moved_list = []
+    positions = []
 
-p = multiprocessing.Pool(multiprocessing.cpu_count())
+    while not game.is_final():
+        tree.reset_search()
+        tree.root.board_state = game.get_board()
+        tree.search_series(2)
+
+        state = game.get_state()
+        temp_move = tree.get_temperature_move(tree.root)
+
+        history.append(temp_move)
+        policy_targets.append(np.array(tree.get_posterior_probabilities()))
+        player_moved_list.append(game.get_turn())
+        positions.append(np.array(game.get_board()))
+
+        game.execute_move(temp_move)
+    return positions, policy_targets, value_targets
+
+p = multiprocessing.Pool(4)
 
 # Generating data by self-play
 def generate_data(game, agent, config, num_sim=100, games=1):
     #tree = get_tree(config, agent, game)
-    x = []
-    y_policy = []
-    y_value = []
-
-    for curr_game in range(games):
-
-        game.__init__()
-        history = []
-        policy_targets = []
-        player_moved_list = []
-        positions = []
-
-        while not game.is_final():
-            tree.reset_search()
-            tree.root.board_state = game.get_board()
-            tree.search_series(2)
-
-            state = game.get_state()
-            temp_move = tree.get_temperature_move(tree.root)
-
-            history.append(temp_move)
-            policy_targets.append(np.array(tree.get_posterior_probabilities()))
-            player_moved_list.append(game.get_turn())
-            positions.append(np.array(game.get_board()))
-
-            game.execute_move(temp_move)
-            
-
-
-        game_outcome = game.get_outcome()
-        value_targets = [game_outcome[x] for x in player_moved_list]
-
-        x = x + positions
-        y_policy = y_policy + policy_targets
-        y_value = y_value + value_targets
-
+    res = [p.apply_async(generate_game, (config, agent)) for i in range(num_sim)]
+    res = [r.get() for r in res]
+    x = [i for arr in res for i in arr[0]] 
+    y_policy = [i for arr in res for i in arr[1]]
+    y_value = [i for arr in res for i in arr[2]] 
     return np.array(x), np.array(y_policy), np.array(y_value)
 
 

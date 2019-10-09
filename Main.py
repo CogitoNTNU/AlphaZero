@@ -72,7 +72,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=100, games_each_epoch=1000,
+def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=10, games_each_epoch=100,
           batch_size=64, num_train_epochs=1):
 
     h, w, d = config.board_dims[1:]

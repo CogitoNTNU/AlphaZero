@@ -7,12 +7,12 @@ import random
 from TicTacToe.Config import policy_output_dim
 from TicTacToe.Gamelogic import TicTacToe
 from FourInARow.Gamelogic import FourInARow
-from FourInARow.Config import policy_output_dim
+#from FourInARow.Config import policy_output_dim
 
 #import loss
 import collections
 from FakeNN import agent0
-from TicTacToe.Config import policy_output_dim
+from TicTacToe import Config
 
 C_PUCT = math.sqrt(2)
 
@@ -117,12 +117,13 @@ class MCTS:
     def get_posterior_probabilities(self):
         node = self.root
         tot = 0
-        post_prob = {}
+        post_prob = np.zeros(Config.policy_output_dim)
+        
         actions = self.get_action_numbers(node)
         for action in actions:
             tot += actions[action]
         for action in actions:
-            post_prob[action] = actions[action] / tot
+            post_prob[Config.move_to_number(action)] = actions[action] / max(1, tot)
         return post_prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action

@@ -57,10 +57,13 @@ def generate_game(config, agent):
 
 p = multiprocessing.Pool(4)
 
+def a(config, agent):
+    return [1,1,1]
+
 # Generating data by self-play
 def generate_data(game, agent, config, num_sim=100, games=1):
     #tree = get_tree(config, agent, game)
-    res = [p.apply_async(generate_game, (config, agent)) for i in range(num_sim)]
+    res = [p.map_async(generate_game, (1, 1)) for i in range(num_sim)]
     res = [r.get() for r in res]
     x = [i for arr in res for i in arr[0]] 
     y_policy = [i for arr in res for i in arr[1]]

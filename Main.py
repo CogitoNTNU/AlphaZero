@@ -39,6 +39,12 @@ def generate_data(game, agent, config, num_sim=100, games=1):
     for curr_game in range(games):
 
         game.__init__()
+        game.execute_move(0)
+        game.execute_move(3)
+        game.execute_move(1)
+        game.execute_move(4)
+        game.execute_move(6)
+        game.execute_move(7)
         history = []
         policy_targets = []
         player_moved_list = []
@@ -47,7 +53,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
         while not game.is_final():
             tree.reset_search()
             tree.root.board_state = game.get_board()
-            tree.search_series(2)
+            tree.search_series(num_sim)
 
             state = game.get_state()
             temp_move = tree.get_temperature_move(tree.root)
@@ -72,17 +78,28 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=10, games_each_epoch=100,
+def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, games_each_epoch=1,
           batch_size=64, num_train_epochs=1):
 
     h, w, d = config.board_dims[1:]
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent.compile(loss = [softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
 
+    game.__init__()
+    game.execute_move(0)
+    game.execute_move(3)
+    game.execute_move(1)
+    game.execute_move(4)
+    game.execute_move(6)
+    game.execute_move(7)
+
+    # print(agent.predict(game.get_board().reshape(1,3,3,2)))
+
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
-        print(x)
-        print(len(x))
+        print(y_pol)
+        # print(x)
+        # print(len(x))
         agent.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
 
     return agent
@@ -97,8 +114,8 @@ def choose_best_legal_move(legal_moves, y_pred):
         return best_move
     else:
         y_pred[best_move] = 0
-        print(y_pred)
+        # print(y_pred)
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-train(Gamelogic.TicTacToe(), Config, 128, 4)
+train(Gamelogic.TicTacToe(), Config, 128, 10)

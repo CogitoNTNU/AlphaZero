@@ -44,6 +44,7 @@ class TicTacToe:
             self.history.append(move)
         else:
             print('illegal move', move, self.history)
+            raise Exception("illegal move attempted: {} with history: {}".format(move, self.history))
         return self
     
     def player_turn(self):

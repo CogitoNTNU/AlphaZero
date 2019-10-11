@@ -193,25 +193,28 @@ class MCTS:
             valid_moves = game.get_moves()
             for move in valid_moves:
                 Node(game, parent, move, result[0][move])
-            parent.n += 1
+            # parent.n += 1
             self.back_propagate(parent, raw_pred[1][0][0])
             self.level = 0
         else:
-            parent.n += 1
+            # parent.n += 1
             self.back_propagate(parent, raw_pred[1][0][0])
             self.level = 0
 
     def back_propagate(self, node, t):
         game = self.game
         if game.is_final():
-            node.t = (game.get_outcome()[node.parent.turn])
+            node.t += (game.get_outcome()[node.parent.turn])
+            node.n += 1
+            game.undo_move()
+            self.back_propagate(node.get_parent(), t)
         else:
             node.t += t
             node.n += 1
 
-        if node.get_parent() is not None:
-            game.undo_move()
-            self.back_propagate(node.get_parent(), -t)
+            if node.get_parent() is not None:
+                game.undo_move()
+                self.back_propagate(node.get_parent(), -t)
 
     def PUCT(self, node, child):
         N = child.n + 1

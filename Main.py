@@ -81,7 +81,7 @@ def train(game, config, num_filters, num_res_blocks, num_sim=99, epochs=50, game
     h, w, d = config.board_dims[1:]
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.00005, momentum=0.9))
+                  optimizer=SGD(lr=0.01, momentum=0))
 
     # game.__init__()
     # game.execute_move(0)
@@ -95,16 +95,18 @@ def train(game, config, num_filters, num_res_blocks, num_sim=99, epochs=50, game
 
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
-        print("Epoch")
-        print(y_pol)
-        print(y_val)
-        # print(x)
-        # print(len(x))
-        raw = agent.predict(x)
-        print(softmax(y_pol, raw[0]))
-        print(raw[1])
-        agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
-        print("end epoch")
+        while True:
+            print("Epoch")
+            print(x)
+            print(y_pol)
+            print(y_val)
+            # print(x)
+            # print(len(x))
+            raw = agent.predict(x)
+            print(softmax(y_pol, raw[0]))
+            print(raw[1])
+            agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
+            print("end epoch")
 
     return agent
 

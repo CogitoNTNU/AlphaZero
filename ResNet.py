@@ -20,7 +20,7 @@ class ResNet:
                        strides,
                        chan_dim,
                        red=False,
-                       reg=0.01,
+                       reg=0.0001,
                        bn_eps=2e-5,
                        bn_mom=0.9,
                        use_bias=True):
@@ -46,8 +46,9 @@ class ResNet:
                                  epsilon=bn_eps,
                                  momentum=bn_mom)(data)
         act1 = Activation("relu")(bn1)
-        conv1 = Conv2D(filters=int(filters * 0.25),
-                       kernel_size=(1, 1),
+        conv1 = Conv2D(filters=int(filters),
+                       kernel_size=(3, 3),
+                       padding="same",
                        use_bias=False,
                        kernel_regularizer=l2(reg)
                        )(act1)
@@ -56,7 +57,7 @@ class ResNet:
         bn2 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv1)
         act2 = Activation("relu")(bn2)
         conv2 = Conv2D(
-            filters=int(filters * 0.25),
+            filters=int(filters),
             kernel_size=(3, 3),
             strides=strides,
             padding="same",
@@ -69,7 +70,8 @@ class ResNet:
         act3 = Activation("relu")(bn3)
         conv3 = Conv2D(
             filters=filters,
-            kernel_size=(1, 1),
+            kernel_size=(3, 3),
+            padding="same",
             use_bias=False,
             kernel_regularizer=l2(reg)
         )(act3)
@@ -119,7 +121,7 @@ class ResNet:
         x = Flatten()(act1)
         dn1 = Dense(
             policy_output_dim,
-            activation='softmax')(x)
+            activation='linear')(x)
         return dn1
 
     @staticmethod
@@ -163,10 +165,10 @@ class ResNet:
               depth,
               filters,
               policy_output_dim,
-              reg=0.01,
+              reg=0.0001,
               bn_eps=2e-5,
               bn_mom=0.9,
-              num_res_blocks=19,
+              num_res_blocks=2,
               use_bias=True):
         """
         Build method for ResNet
@@ -210,10 +212,10 @@ class ResNet:
         for _ in range(num_res_blocks):
             x = ResNet.residual_block(
                 data=x,
-                filters=256,
+                filters=filters,
                 strides=(1, 1),
                 chan_dim=chan_dim,
-                red=True
+                red=False
             )
 
         # Policy head

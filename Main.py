@@ -17,14 +17,14 @@ import numpy as np
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
     tree = MCTS.MCTS(game, game.get_board(), agent)
-    #tree.dirichlet_noise = dirichlet_noise
-    #tree.NN_input_dim = config.board_dims
-    #tree.policy_output_dim = config.policy_output_dim
-    #tree.NN_output_to_moves_func = config.NN_output_to_moves
-    #tree.move_to_number_func = config.move_to_number
-    #tree.number_to_move_func = config.number_to_move
-    #tree.set_evaluation(agent)
-    #tree.set_game(game)
+    # tree.dirichlet_noise = dirichlet_noise
+    # tree.NN_input_dim = config.board_dims
+    # tree.policy_output_dim = config.policy_output_dim
+    # tree.NN_output_to_moves_func = config.NN_output_to_moves
+    # tree.move_to_number_func = config.move_to_number
+    # tree.number_to_move_func = config.number_to_move
+    # tree.set_evaluation(agent)
+    # tree.set_game(game)
     return tree
 
 
@@ -64,8 +64,6 @@ def generate_data(game, agent, config, num_sim=100, games=1):
             positions.append(np.array(game.get_board()))
 
             game.execute_move(temp_move)
-            
-
 
         game_outcome = game.get_outcome()
         value_targets = [game_outcome[x] for x in player_moved_list]
@@ -78,12 +76,12 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, games_each_epoch=1,
+def train(game, config, num_filters, num_res_blocks, num_sim=99, epochs=50, games_each_epoch=1,
           batch_size=64, num_train_epochs=1):
-
     h, w, d = config.board_dims[1:]
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
-    agent.compile(loss = ['mean_squared_error', 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
+    agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
+                  optimizer=SGD(lr=0.00005, momentum=0.9))
 
     # game.__init__()
     # game.execute_move(0)
@@ -97,11 +95,16 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, gam
 
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
+        print("Epoch")
         print(y_pol)
         print(y_val)
         # print(x)
         # print(len(x))
-        agent.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
+        raw = agent.predict(x)
+        print(softmax(y_pol, raw[0]))
+        print(raw[1])
+        agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
+        print("end epoch")
 
     return agent
 
@@ -109,7 +112,7 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, gam
 def choose_best_legal_move(legal_moves, y_pred):
     best_move = np.argmax(y_pred)
     print("Best move", best_move)
-    if(y_pred[best_move] == 0):
+    if (y_pred[best_move] == 0):
         return None
     if best_move in legal_moves:
         return best_move

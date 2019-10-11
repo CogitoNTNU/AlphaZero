@@ -121,7 +121,7 @@ class TicTacToe:
         return len(self.history) % 2 if not self.is_final() else None
 
     def get_board(self):
-        return np.copy(self.board) #if len(self.history) % 2 == 0 else np.copy(np.flip(self.board, -1))
+        return np.copy(self.board) if len(self.history) % 2 == 0 else np.copy(np.flip(self.board, -1))
 
     def create_game(self, board_state):
         self.board = board_state

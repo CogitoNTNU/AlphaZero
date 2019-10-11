@@ -9,7 +9,7 @@ from TicTacToe.Gamelogic import TicTacToe
 from FourInARow.Gamelogic import FourInARow
 # from FourInARow.Config import policy_output_dim
 
-# import loss
+import loss
 import collections
 from FakeNN import agent0
 from TicTacToe import Config
@@ -143,12 +143,12 @@ class MCTS:
         probs = probs / sum(probs)
         return np.random.choice(moves, p=probs)
 
-    def evaluate(self, board_state, to_play):
-        if to_play != 0:
-            value = 1 - self.evaluate(board_state, 0)
-        else:
-            value = self.agent.predict(board_state)[1]
-            return value
+    # def evaluate(self, board_state, to_play):
+    #     if to_play != 0:
+    #         value = 1 - self.evaluate(board_state, 0)
+    #     else:
+    #         value = self.agent.predict(board_state)[1]
+    #         return value
 
     def get_most_searched_move(self, node):
         actions = self.get_action_numbers(node)
@@ -184,18 +184,21 @@ class MCTS:
             parent = best_child
             # print("best child:", best_child.last_action)
             self.game.execute_move(best_child.last_action)
-        result = self.agent.predict(np.array([parent.get_board_state()]))
+
+        raw_pred = self.agent.predict(np.array([game.get_board()]))
+        result = loss.softmax(np.array(game.get_legal_NN_output()), raw_pred[0])
+        # result = self.agent.predict(np.array([parent.get_board_state()]))
 
         if not self.game.is_final():
             valid_moves = game.get_moves()
             for move in valid_moves:
-                Node(game, parent, move, result[0][0][move])
+                Node(game, parent, move, result[0][move])
             parent.n += 1
-            self.back_propagate(parent, result[1][0][0])
+            self.back_propagate(parent, raw_pred[1][0][0])
             self.level = 0
         else:
             parent.n += 1
-            self.back_propagate(parent, result[1][0][0])
+            self.back_propagate(parent, raw_pred[1][0][0])
             self.level = 0
 
     def back_propagate(self, node, t):

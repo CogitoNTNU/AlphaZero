@@ -33,4 +33,4 @@ def softmax(y_true, y_pred):
     p = np.where(where, negatives, p)
     
     # print('lin_act', p)
-    return np.exp(p-np.max(p))/np.exp(p-np.max(p)).sum()
+    return np.exp(p-np.max(p))/np.exp(p-np.max(p)).sum(axis=-1, keepdims=True)

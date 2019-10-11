@@ -171,7 +171,7 @@ class MCTS:
     def search(self):
         game = self.game
         parent = self.root
-        print("start:", game.history)
+        # print("start:", game.history)
         while not parent.is_leaf_node():
             best_puct = None
             for child in parent.children:

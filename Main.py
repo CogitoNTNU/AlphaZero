@@ -83,21 +83,22 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, gam
 
     h, w, d = config.board_dims[1:]
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
-    agent.compile(loss = [softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
+    agent.compile(loss = ['mean_squared_error', 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
 
-    game.__init__()
-    game.execute_move(0)
-    game.execute_move(3)
-    game.execute_move(1)
-    game.execute_move(4)
-    game.execute_move(6)
-    game.execute_move(7)
+    # game.__init__()
+    # game.execute_move(0)
+    # game.execute_move(3)
+    # game.execute_move(1)
+    # game.execute_move(4)
+    # game.execute_move(6)
+    # game.execute_move(7)
 
     # print(agent.predict(game.get_board().reshape(1,3,3,2)))
 
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
         print(y_pol)
+        print(y_val)
         # print(x)
         # print(len(x))
         agent.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])

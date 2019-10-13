@@ -11,6 +11,7 @@ from keras.layers import Input
 from keras.models import Model
 from keras.layers import add
 from keras.regularizers import l2
+from keras.initializers import TruncatedNormal
 
 
 class ResNet:
@@ -41,40 +42,31 @@ class ResNet:
         # initialize as the input (identity) data
         shortcut = data
 
-        # the first block of the ResNet module are the 1x1 CONVs
-        bn1 = BatchNormalization(axis=chan_dim,
-                                 epsilon=bn_eps,
-                                 momentum=bn_mom)(data)
-        act1 = Activation("relu")(bn1)
         conv1 = Conv2D(filters=int(filters),
                        kernel_size=(3, 3),
                        padding="same",
                        use_bias=False,
+                       kernel_initializer=TruncatedNormal(stddev=0.05),
                        kernel_regularizer=l2(reg)
-                       )(act1)
+                       )(data)
+        # the first block of the ResNet module are the 1x1 CONVs
+        bn1 = BatchNormalization(axis=chan_dim,
+                                 epsilon=bn_eps,
+                                 momentum=bn_mom)(conv1)
+        act1 = Activation("relu")(bn1)
 
-        # The second block of the ResNet module are the 3x3 CONVs
-        bn2 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv1)
-        act2 = Activation("relu")(bn2)
         conv2 = Conv2D(
             filters=int(filters),
             kernel_size=(3, 3),
             strides=strides,
             padding="same",
             use_bias=False,
+            kernel_initializer=TruncatedNormal(stddev=0.05),
             kernel_regularizer=l2(reg)
-        )(act2)
+        )(act1)
+        # The second block of the ResNet module are the 3x3 CONVs
+        bn2 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv2)
 
-        # the third block of the ResNet module is another set of 1x1 CONVs
-        bn3 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv2)
-        act3 = Activation("relu")(bn3)
-        conv3 = Conv2D(
-            filters=filters,
-            kernel_size=(3, 3),
-            padding="same",
-            use_bias=False,
-            kernel_regularizer=l2(reg)
-        )(act3)
 
         # if we are to reduce the spatial size, apply a CONV layer to the shortcut
         if red:
@@ -83,14 +75,17 @@ class ResNet:
                 kernel_size=(1, 1),
                 strides=strides,
                 use_bias=False,
+                kernel_initializer=TruncatedNormal(stddev=0.05),
                 kernel_regularizer=l2(reg)
             )(act1)
 
         # Add together the shortcut and the final convolutional layer
-        x = add([conv3, shortcut])
+        x = add([bn2, shortcut])
+
+        act2 = Activation("relu")(x)
 
         # Return the addition as the output of the ResNet module
-        return x
+        return act2
 
     @staticmethod
     def policy_head(data,
@@ -109,9 +104,11 @@ class ResNet:
         """
         conv1 = Conv2D(
             filters=2,
-            kernel_size=(1, 1),
+            kernel_size=(3, 3),
             strides=(1, 1),
             use_bias=False,
+            padding="same",
+            kernel_initializer=TruncatedNormal(stddev=0.05)
         )(data)
         bn1 = BatchNormalization(
             axis=chan_dim,
@@ -143,6 +140,8 @@ class ResNet:
             kernel_size=(1, 1),
             strides=(1, 1),
             use_bias=False,
+            padding="same",
+            kernel_initializer=TruncatedNormal(stddev=0.05),
         )(data)
         bn1 = BatchNormalization(
             axis=chan_dim,
@@ -152,7 +151,8 @@ class ResNet:
         x = Flatten()(act1)
         dn1 = Dense(
             256,
-            activation='relu')(x)
+            activation='relu',
+            kernel_initializer=TruncatedNormal(stddev=0.05))(x)
         dn2 = Dense(
             1,
             activation='tanh'
@@ -199,6 +199,7 @@ class ResNet:
             strides=(1, 1),
             use_bias=False,
             padding="same",
+            kernel_initializer=TruncatedNormal(stddev=0.05),
             kernel_regularizer=l2(reg)
         )(input_data)
         x = BatchNormalization(

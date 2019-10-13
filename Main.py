@@ -32,9 +32,7 @@ class KerasModel():
 
     def predict(self, arr):
         with self.mutex:
-            with self.graph.as_default():
-                with self.session.as_default():
-                    return self.model.predict(np.array(arr))
+            return self.model._make_predict_function(arr)
 
     def train(self, x, y_pol, y_val, batch_size, num_train_epochs):
         with self.mutex:

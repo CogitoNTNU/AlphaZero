@@ -7,14 +7,19 @@ import random
 from TicTacToe.Config import policy_output_dim
 from TicTacToe.Gamelogic import TicTacToe
 from FourInARow.Gamelogic import FourInARow
+import multiprocessing as mp
+from multiprocessing import Lock
 #from FourInARow.Config import policy_output_dim
 
 #import loss
 import collections
 from FakeNN import agent0
 from TicTacToe import Config
+lock = Lock()
 
 C_PUCT = math.sqrt(2)
+
+
 
 
 # OBS: when the game is over it the algorithm expects that it is none to move
@@ -183,6 +188,7 @@ class MCTS:
             self.level += 1
             parent = best_child
             self.game.execute_move(best_child.last_action)
+    
         result = self.agent.predict(np.array([parent.get_board_state()]))
 
         if not self.game.is_final():

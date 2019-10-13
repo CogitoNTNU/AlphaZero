@@ -9,11 +9,44 @@ from TicTacToe import Gamelogic
 from TicTacToe import Config
 from keras.optimizers import SGD
 from loss import softmax_cross_entropy_with_logits, softmax
+import os
 
 # Importing other libraries
 import numpy as np
-import multiprocessing
+import multiprocess
+from multiprocess.managers import BaseManager
+from multiprocess import Lock
+import tensorflow as tf
 #from pathos.multiprocessing import ProcessingPool as Pool
+
+class KerasModel():
+    def __init__(self):
+        self.session = tf.Session()
+        self.graph = tf.get_default_graph()
+        self.mutex = Lock()
+        self.model = None
+
+    def initialize(self, h, w, d, num_filters, config, num_res_blocks):
+        self.model = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
+        self.model.compile(loss = [softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
+
+    def predict(self, arr):
+        with self.mutex:
+            with self.graph.as_default():
+                with self.session.as_default():
+                    return self.model.predict(np.array(arr))
+
+    def train(self, x, y_pol, y_val, batch_size, num_train_epochs):
+        with self.mutex:
+            self.model.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
+
+class KerasManager(BaseManager):
+    pass
+
+KerasManager.register('KerasModel', KerasModel)
+
+def work(kerasmodel, h, w, d, num_filters, config, num_res_blocks):
+    kerasmodel.initialize(h, w, d, num_filters, config, num_res_blocks)
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
@@ -32,7 +65,8 @@ def get_game_object():
     return Gamelogic.TicTacToe()
 
 def generate_game(config, agent):
-    tree = get_tree(config, agent, get_game_object())
+    game = get_game_object()
+    tree = get_tree(config, agent, game)
 
     history = []
     policy_targets = []
@@ -55,7 +89,7 @@ def generate_game(config, agent):
         game.execute_move(temp_move)
     return positions, policy_targets, value_targets
 
-p = multiprocessing.Pool(4)
+p = multiprocess.Pool(4)
 
 def a(config, agent):
     return [1,1,1]
@@ -63,7 +97,8 @@ def a(config, agent):
 # Generating data by self-play
 def generate_data(game, agent, config, num_sim=100, games=1):
     #tree = get_tree(config, agent, game)
-    res = [p.map_async(generate_game, (1, 1)) for i in range(num_sim)]
+
+    res = [p.apply_async(generate_game, (config, agent)) for i in range(num_sim)]
     res = [r.get() for r in res]
     x = [i for arr in res for i in arr[0]] 
     y_policy = [i for arr in res for i in arr[1]]
@@ -76,17 +111,18 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=10, gam
           batch_size=64, num_train_epochs=1):
 
     h, w, d = config.board_dims[1:]
-    agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
-    agent.compile(loss = [softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.0005, momentum=0.9))
+    with KerasManager() as manager:
+        print('Main', os.getpid())
+        kerasmodel = manager.KerasModel()
+        work(kerasmodel, h, w, d, num_filters, config, num_res_blocks)
 
-    for epoch in range(epochs):
-        x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
-        print(x)
-        print(len(x))
-        agent.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
+        for epoch in range(epochs):
+            x, y_pol, y_val = generate_data(game, kerasmodel, config, num_sim=num_sim, games=games_each_epoch)
+            print(x)
+            print(len(x))
+            kerasmodel.train(x, y_pol, y_val, batch_size, num_train_epochs)
 
-    return agent
-
+    return kerasmodel
 
 def choose_best_legal_move(legal_moves, y_pred):
     best_move = np.argmax(y_pred)

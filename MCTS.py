@@ -221,7 +221,7 @@ class MCTS:
 
     def PUCT(self, node, child):
         N = child.n
-        sum_N_potential_actions = node.n - 1
+        sum_N_potential_actions = max(node.n - 1,1)
         exp = math.log(1 + sum_N_potential_actions + C_PUCT) / C_PUCT + C_INIT
         U = exp * child.probability * math.sqrt(sum_N_potential_actions) / (1 + N)
         Q = child.t / max(N, 1)

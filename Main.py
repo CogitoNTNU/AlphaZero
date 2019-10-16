@@ -9,7 +9,7 @@ from TicTacToe import Gamelogic
 from TicTacToe import Config
 from keras.optimizers import SGD
 from loss import softmax_cross_entropy_with_logits, softmax
-import NN2
+#import NN2
 
 # Importing other libraries
 import numpy as np
@@ -83,7 +83,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 # Training AlphaZero by generating data from self-play and fitting the network
 def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, games_each_epoch=15,
-          batch_size=32, num_train_epochs=10):
+          batch_size=32, num_train_epochs=3):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
@@ -113,7 +113,7 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, gam
 
         agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
         print("end epoch")
-        agent.save_weights("Models/"+Config.name+"/"+str(epoch)+".h5")
+        agent.save_weights("Models/"+Config.name+"/"+"a"+".h5")
     return agent
 
 
@@ -129,4 +129,4 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-train(Gamelogic.TicTacToe(), Config, 128, 5)
+#train(Gamelogic.TicTacToe(), Config, 128, 5)

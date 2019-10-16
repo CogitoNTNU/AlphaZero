@@ -14,6 +14,7 @@ import NN2
 # Importing other libraries
 import numpy as np
 
+# TODO: game outcome not propagated correctly?
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
@@ -40,9 +41,9 @@ def generate_data(game, agent, config, num_sim=100, games=1):
     for curr_game in range(games):
 
         game.__init__()
-        # game.execute_move(0)
-        # game.execute_move(3)
-        # game.execute_move(1)
+        game.execute_move(0)
+        game.execute_move(3)
+        game.execute_move(1)
         # game.execute_move(4)
         # game.execute_move(6)
         # game.execute_move(7)
@@ -58,9 +59,11 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
             state = game.get_state()
             temp_move = tree.get_temperature_move(tree.root)
-
+            print(tree.get_temperature_probabilities(tree.root))
             history.append(temp_move)
             policy_targets.append(np.array(tree.get_posterior_probabilities()))
+            print(tree.get_prior_probabilities(game.get_board().reshape(1,3,3,2)))
+            print(policy_targets[-1])
             player_moved_list.append(game.get_turn())
             positions.append(np.array(game.get_board()))
 
@@ -79,13 +82,13 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=150, epochs=50, games_each_epoch=10,
+def train(game, config, num_filters, num_res_blocks, num_sim=1500, epochs=50, games_each_epoch=10,
           batch_size=32, num_train_epochs=10):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.01, momentum=0.9))
+                  optimizer=SGD(lr=0.001, momentum=0.9))
     agent.summary()
 
     # game.__init__()

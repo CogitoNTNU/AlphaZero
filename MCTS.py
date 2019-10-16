@@ -109,7 +109,8 @@ class MCTS:
         # Returning the prior probabilities of a state, also known as the "raw" NN predictions
 
     def get_prior_probabilities(self, board_state):
-        return self.agent.predict(board_state)[1]
+        pred=self.agent.predict(board_state)
+        return loss.softmax(np.array(self.game.get_legal_NN_output()), pred[0]), pred[1]
 
     # Returning the posterior search probabilities of the search,
     # meaning that the percentages is calculated by: num_exec/total

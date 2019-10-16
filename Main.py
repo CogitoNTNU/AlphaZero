@@ -47,7 +47,7 @@ def work(kerasmodel, h, w, d, num_filters, config, num_res_blocks):
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
-    tree = MCTS.MCTS(game, game.get_board(), agent)
+    tree = MCTS.MCTS(game, game.get_board())
     #tree.dirichlet_noise = dirichlet_noise
     #tree.NN_input_dim = config.board_dims
     #tree.policy_output_dim = config.policy_output_dim
@@ -92,9 +92,9 @@ def a(config, agent):
     return [1,1,1]
 
 class GameGenerator:
-    def __init__(self, config, agent):
+    def __init__(self, config):
         self.game = get_game_object()
-        self.tree = get_tree(config, agent, self.game)
+        self.tree = get_tree(config, self.game)
         self.history = []
         self.policy_targets = []
         self.player_moved_list = []
@@ -132,7 +132,7 @@ class GameGenerator:
 def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
     #tree = get_tree(config, agent, game)
 
-    game_generators = [GameGenerator(config, agent) for _ in range(num_sim)]
+    game_generators = [GameGenerator(config) for _ in range(num_sim)]
 
     x = []
     y_policy = []

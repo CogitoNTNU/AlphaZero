@@ -67,12 +67,11 @@ class Node:
 
 class MCTS:
     
-    def __init__(self, game, start_state, agent):
+    def __init__(self, game, start_state):
         self.root = Node(game, None, None)
         self.game = game
         self.root.board_state = start_state
         self.start_state = start_state
-        self.agent = agent
         self.T = 1
         self.level = 0
         self.leafNode = None
@@ -101,8 +100,8 @@ class MCTS:
 
 
     # Setting the evaluation algorithm used by the MCTS
-    def set_evaluation(self, eval):
-        self.agent = eval
+#    def set_evaluation(self, eval):
+#        self.agent = eval
 
     # Returning a dictionary with action as key and visit number as value
     def get_action_numbers(self, node):
@@ -115,8 +114,8 @@ class MCTS:
         return action_numbers   
 
     # Returning the prior probabilities of a state, also known as the "raw" NN predictions
-    def get_prior_probabilities(self, board_state):
-        return self.agent.predict(board_state)[1]
+#    def get_prior_probabilities(self, board_state):
+#        return self.agent.predict(board_state)[1]
 
     # Returning the posterior search probabilities of the search,
     # meaning that the percentages is calculated by: num_exec/total
@@ -151,12 +150,12 @@ class MCTS:
         return np.random.choice(moves, p=probs)
            
     
-    def evaluate(self, board_state, to_play):
-        if to_play != 0:
-            value = 1 - self.evaluate(board_state, 0)
-        else:
-            value = self.agent.predict(board_state)[1]
-            return value
+#    def evaluate(self, board_state, to_play):
+#        if to_play != 0:
+#           value = 1 - self.evaluate(board_state, 0)
+#        else:
+#            value = self.agent.predict(board_state)[1]
+#            return value
 
     def get_most_searched_move(self, node):
         actions = self.get_action_numbers(node)

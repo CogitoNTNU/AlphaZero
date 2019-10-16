@@ -199,13 +199,13 @@ class MCTS:
         if not self.game.is_final():
             valid_moves = game.get_moves_from_board_state(parent.get_board_state())
             for move in valid_moves:
-                Node(game, parent, move, result[0][0][move])
+                Node(game, parent, move, result[0][move])
             parent.n += 1
-            self.back_propagate(parent, result[1][0][0])
+            self.back_propagate(parent, result[1][0])
             self.level = 0
         else:
             parent.n += 1
-            self.back_propagate(parent, result[1][0][0])
+            self.back_propagate(parent, result[1][0])
             self.level = 0
 
     def back_propagate(self, node, t):

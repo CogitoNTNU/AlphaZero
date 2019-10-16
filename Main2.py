@@ -86,7 +86,7 @@ def generate_game(config, agent):
         game.execute_move(temp_move)
     return positions, policy_targets, value_targets
 
-p = multiprocess.Pool(16)
+#p = multiprocess.Pool(16)
 
 def a(config, agent):
     return [1,1,1]
@@ -139,19 +139,19 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
     y_value = []
 
     while len(game_generators):
-        res = [p.apply_async(game_generator.reset_tree) for game_generator in game_generators]
-        res = [r.get() for r in res]
+        res = [game_generator.reset_tree() for game_generator in game_generators]
+        #res = [r.get() for r in res]
         for i in range(num_search):
-            res = [p.apply_async(game_generator.run_part1) for game_generator in game_generators]
-            res = [r.get() for r in res]
+            res = [game_generator.run_part1() for game_generator in game_generators]
+            #res = [r.get() for r in res]
             batch = np.array([result for game_generator, result in res])
             results = agent.predict(batch)
             #print(np.array([results[0][0], results[1][0]]))
-            res = [p.apply_async(res[i][0].run_part2, (np.array([results[0][i], [results[1][i]]]), )) for i in range(len(res))]
-            game_generators = [r.get() for r in res]
+            res = [res[i][0].run_part2(np.array([results[0][i], [results[1][i]]])) for i in range(len(res))]
+            #game_generators = [r.get() for r in res]
             print("har gjort 100 søk")
-        res = [p.apply_async(game_generator.execute_best_move) for game_generator in game_generators]
-        res = [r.get() for r in res]
+        res = [game_generator.execute_best_move() for game_generator in game_generators]
+        #res = [r.get() for r in res]
         game_generators = []
         finished_games = []
         for game_generator, finished in res:
@@ -159,8 +159,8 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
                 finished_games.append(game_generator)
                 break
             game_generators.append(game_generator)
-        game_results = [p.apply_async(game_generator.get_results) for game_generator in finished_games]
-        game_results = [r.get for r in game_results]
+        game_results = [game_generator.get_results() for game_generator in finished_games]
+        #game_results = [r.get for r in game_results]
         for history, policy_targets, value_targets in game_results:
             x += history
             y_policy += policy_targets

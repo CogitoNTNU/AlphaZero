@@ -15,6 +15,7 @@ from FakeNN import agent0
 from TicTacToe import Config
 
 C_PUCT = math.sqrt(2)
+C_INIT = 1
 
 
 # OBS: when the game is over it the algorithm expects that it is none to move
@@ -109,7 +110,7 @@ class MCTS:
         # Returning the prior probabilities of a state, also known as the "raw" NN predictions
 
     def get_prior_probabilities(self, board_state):
-        pred=self.agent.predict(board_state)
+        pred = self.agent.predict(board_state)
         return loss.softmax(np.array(self.game.get_legal_NN_output()), pred[0]), pred[1]
 
     # Returning the posterior search probabilities of the search,
@@ -205,10 +206,11 @@ class MCTS:
     def back_propagate(self, node, t):
         game = self.game
         if game.is_final():
-            node.t += (game.get_outcome()[node.parent.turn])
+            result=game.get_outcome()[node.parent.turn]
+            node.t += result
             node.n += 1
             game.undo_move()
-            self.back_propagate(node.get_parent(), t)
+            self.back_propagate(node.get_parent(), -result)
         else:
             node.t += t
             node.n += 1
@@ -218,8 +220,9 @@ class MCTS:
                 self.back_propagate(node.get_parent(), -t)
 
     def PUCT(self, node, child):
-        N = child.n + 1
+        N = child.n
         sum_N_potential_actions = node.n - 1
-        U = C_PUCT * child.probability * math.sqrt(sum_N_potential_actions) / (1 + N)
-        Q = child.t / N
+        exp = math.log(1 + sum_N_potential_actions + C_PUCT) / C_PUCT + C_INIT
+        U = exp * child.probability * math.sqrt(sum_N_potential_actions) / (1 + N)
+        Q = child.t / max(N, 1)
         return Q + U

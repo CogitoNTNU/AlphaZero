@@ -41,9 +41,9 @@ def generate_data(game, agent, config, num_sim=100, games=1):
     for curr_game in range(games):
 
         game.__init__()
-        game.execute_move(0)
-        game.execute_move(3)
-        game.execute_move(1)
+        # game.execute_move(0)
+        # game.execute_move(3)
+        # game.execute_move(1)
         # game.execute_move(4)
         # game.execute_move(6)
         # game.execute_move(7)
@@ -56,7 +56,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
             tree.reset_search()
             tree.root.board_state = game.get_board()
             tree.search_series(num_sim)
-
+            # tree.search_series(10)
             state = game.get_state()
             temp_move = tree.get_temperature_move(tree.root)
             print(tree.get_temperature_probabilities(tree.root))
@@ -82,7 +82,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=1500, epochs=50, games_each_epoch=10,
+def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=50, games_each_epoch=15,
           batch_size=32, num_train_epochs=10):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)

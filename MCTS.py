@@ -75,6 +75,7 @@ class MCTS:
         self.agent = agent
         self.T = 1
         self.level = 0
+        self.leafNode = None
 
     def reset_search(self):
         self.root = Node(self.game, None, None)
@@ -175,7 +176,7 @@ class MCTS:
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     #TODO ikke lage noder når game er over  
-    def search(self):
+    def search_part1(self):
         game = self.game
         parent = self.root
         while not parent.is_leaf_node():
@@ -188,8 +189,13 @@ class MCTS:
             self.level += 1
             parent = best_child
             self.game.execute_move(best_child.last_action)
-    
-        result = self.agent.predict(np.array([parent.get_board_state()]))
+        self.leafNode = parent
+        return parent.get_board_state()
+
+    def search_part2(self, result):
+        parent = self.leafNode
+        game = self.game
+        #result = self.agent.predict(np.array([parent.get_board_state()]))
 
         if not self.game.is_final():
             valid_moves = game.get_moves_from_board_state(parent.get_board_state())

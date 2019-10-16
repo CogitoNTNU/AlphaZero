@@ -15,7 +15,6 @@ import os
 import numpy as np
 import multiprocess
 from multiprocess.managers import BaseManager
-from multiprocess import Lock
 import tensorflow as tf
 #from pathos.multiprocessing import ProcessingPool as Pool
 
@@ -92,15 +91,78 @@ p = multiprocess.Pool(4)
 def a(config, agent):
     return [1,1,1]
 
+class GameGenerator:
+    def __init__(self, config, agent):
+        self.game = get_game_object()
+        self.tree = get_tree(config, agent, self.game)
+        self.history = []
+        self.policy_targets = []
+        self.player_moved_list = []
+        self.positions = []
+
+    def run_part1(self):
+        return self, self.tree.search_part1()
+
+    def run_part2(self, result):
+        self.tree.search_part2(result)
+        return self
+
+    def execute_best_move(self):
+        temp_move = self.tree.get_temperature_move(self.tree.root)
+
+        self.history.append(temp_move)
+        self.policy_targets.append(np.array(self.tree.get_posterior_probabilities()))
+        self.player_moved_list.append(self.game.get_turn())
+        self.positions.append(np.array(self.game.get_board()))
+
+        self.game.execute_move(temp_move)
+        return (self, self.game.is_final())
+
+    def reset_tree(self):
+        self.tree.reset_search()
+        self.tree.root.board_state = self.game.get_board()
+
+    def get_results(self):
+        game_outcome = self.game.get_outcome()
+        value_targets = [game_outcome[x] for x in self.player_moved_list]
+        return np.array(self.positions), np.array(self.policy_targets), np.array(value_targets)
+
+
 # Generating data by self-play
-def generate_data(game, agent, config, num_sim=100, games=1):
+def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
     #tree = get_tree(config, agent, game)
 
-    res = [p.apply_async(generate_game, (config, agent)) for i in range(num_sim)]
-    res = [r.get() for r in res]
-    x = [i for arr in res for i in arr[0]] 
-    y_policy = [i for arr in res for i in arr[1]]
-    y_value = [i for arr in res for i in arr[2]] 
+    game_generators = [GameGenerator(config, agent) for _ in range(num_sim)]
+
+    x = []
+    y_policy = []
+    y_value = []
+
+    while len(game_generators):
+        res = [p.apply_async(game_generator.reset_tree) for game_generator in game_generators]
+        res = [r.get() for r in res]
+        for i in range(num_search):
+            res = [p.apply_async(game_generator.run_part1) for game_generator in game_generators]
+            res = [r.get() for r in res]
+            batch = np.array([result for game_generator, result in res])
+            results = agent.predict(batch)
+            res = [p.apply_async(res[i].run_part2, (results[i])) for i in range(len(res))]
+            game_generators = [r.get() for r in res]
+        res = [p.apply_async(game_generator.execute_best_move) for game_generator in game_generators]
+        res = [r.get() for r in res]
+        game_generators = []
+        finished_games = []
+        for game_generator, finished in res:
+            if finished:
+                finished_games.append(game_generator)
+                break
+            game_generators.append(game_generator)
+        game_results = [p.apply_async(game_generator.get_results) for game_generator in finished_games]
+        game_results = [r.get for r in game_results]
+        for history, policy_targets, value_targets in game_results:
+            x += history
+            y_policy += policy_targets
+            y_value = value_targets
     return np.array(x), np.array(y_policy), np.array(y_value)
 
 
@@ -109,18 +171,26 @@ def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=10, gam
           batch_size=64, num_train_epochs=1):
 
     h, w, d = config.board_dims[1:]
-    with KerasManager() as manager:
-        print('Main', os.getpid())
-        kerasmodel = manager.KerasModel()
-        work(kerasmodel, h, w, d, num_filters, config, num_res_blocks)
 
-        for epoch in range(epochs):
-            x, y_pol, y_val = generate_data(game, kerasmodel, config, num_sim=num_sim, games=games_each_epoch)
-            print(x)
-            print(len(x))
-            kerasmodel.train(x, y_pol, y_val, batch_size, num_train_epochs)
+    agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
+    agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
+                  optimizer=SGD(lr=0.001, momentum=0.9))
+    agent.summary()
 
-    return kerasmodel
+    for epoch in range(epochs):
+        x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
+        print("Epoch")
+        print(x.shape)
+        raw = agent.predict(x)
+        for num in range(len(x)):
+            print("targets-predictions")
+            print(y_pol[num], y_val[num])
+            print(softmax(y_pol[num], raw[0][num]), raw[1][num])
+
+        agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
+        print("end epoch")
+        agent.save_weights("Models/" + Config.name + "/" + str(epoch) + ".h5")
+    return agent
 
 def choose_best_legal_move(legal_moves, y_pred):
     best_move = np.argmax(y_pred)

@@ -51,6 +51,10 @@ class GameRendering:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
+                    
+                
+                
+                
                 elif pygame.mouse.get_pressed()[0] and self.mouse_pos[0] < self.side_length * self.width + self.line_th and self.mouse_pos[1] < self.side_length * self.height + self.line_th: #Sjekk om musen er innenfor brettet
                     self.execute_move()
                     self._render_background()
@@ -95,11 +99,11 @@ class GameRendering:
                     (self.side_length + self.line_th) // 2 + self.side_length * (
                                 (Config.move_to_number(move)) // self.width)], self.piece_size)
             #render first line of text
-            #self.label = self.font_renderer.render(str(self.weights[move//self.width][move%self.width][0]),1,self.font_color)
-            #self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move))//self.width) - self.label.get_height() ])
+            self.label = self.font_renderer.render(str(self.weights[move//self.width][move%self.width][0]),1,self.font_color)
+            self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move))//self.width) - self.label.get_height() ])
             #second line
-            #self.label = self.font_renderer.render(str(self.weights[move//self.width][move%self.width][1]),1,self.font_color)
-            #self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move))//self.width) + self.label.get_height() / 2])
+            self.label = self.font_renderer.render(str(self.weights[move//self.width][move%self.width][1]),1,self.font_color)
+            self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move))//self.width) + self.label.get_height() / 2])
 
 
     def render(self):

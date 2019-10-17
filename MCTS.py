@@ -15,6 +15,7 @@ from multiprocessing import Lock
 import collections
 from FakeNN import agent0
 from TicTacToe import Config
+import loss
 lock = Lock()
 
 C_PUCT = math.sqrt(2)
@@ -67,7 +68,7 @@ class Node:
 
 class MCTS:
     
-    def __init__(self, game, start_state):
+    def __init__(self, game, start_state, agent):
         self.root = Node(game, None, None)
         self.game = game
         self.root.board_state = start_state
@@ -75,6 +76,7 @@ class MCTS:
         self.T = 1
         self.level = 0
         self.leafNode = None
+        self.agent = agent
 
     def reset_search(self):
         self.root = Node(self.game, None, None)
@@ -230,3 +232,32 @@ class MCTS:
 
 
 
+    def search(self):
+        game = self.game
+        parent = self.root
+        # print("start:", game.history)
+        while not parent.is_leaf_node():
+            best_puct = None
+            for child in parent.children:
+                # print("child.last action:", child.last_action)
+                curr_puct = self.PUCT(parent, child)
+                if (best_puct == None or curr_puct >= best_puct):
+                    best_child = child
+                    best_puct = curr_puct
+            self.level += 1
+            parent = best_child
+            # print("best child:", best_child.last_action)
+            self.game.execute_move(best_child.last_action)
+        result = self.agent.predict(np.array([parent.get_board_state()]))
+
+        if not self.game.is_final():
+            valid_moves = game.get_moves()
+            for move in valid_moves:
+                Node(game, parent, move, result[0][0][move])
+            parent.n += 1
+            self.back_propagate(parent, result[1][0][0])
+            self.level = 0
+        else:
+            parent.n += 1
+            self.back_propagate(parent, result[1][0][0])
+            self.level = 0

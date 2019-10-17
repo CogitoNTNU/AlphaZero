@@ -47,7 +47,8 @@ def work(kerasmodel, h, w, d, num_filters, config, num_res_blocks):
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, game, dirichlet_noise=True):
-    tree = MCTS.MCTS(game, game.get_board())
+    global agent
+    tree = MCTS.MCTS(game, game.get_board(), agent)
     #tree.dirichlet_noise = dirichlet_noise
     #tree.NN_input_dim = config.board_dims
     #tree.policy_output_dim = config.policy_output_dim
@@ -73,7 +74,7 @@ def generate_game(config, agent):
     while not game.is_final():
         tree.reset_search()
         tree.root.board_state = game.get_board()
-        tree.search_series(2)
+        tree.search_series(100)
 
         state = game.get_state()
         temp_move = tree.get_temperature_move(tree.root)
@@ -84,6 +85,8 @@ def generate_game(config, agent):
         positions.append(np.array(game.get_board()))
 
         game.execute_move(temp_move)
+    game_outcome = game.get_outcome()
+    value_targets = [game_outcome[x] for x in player_moved_list]
     return positions, policy_targets, value_targets
 
 #p = multiprocess.Pool(16)
@@ -149,7 +152,7 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
             #print(np.array([results[0][0], results[1][0]]))
             res = [res[i][0].run_part2(np.array([results[0][i], [results[1][i]]])) for i in range(len(res))]
             #game_generators = [r.get() for r in res]
-            print("har gjort 100 søk")
+            #print("har gjort 100 søk")
         res = [game_generator.execute_best_move() for game_generator in game_generators]
         #res = [r.get() for r in res]
         game_generators = []
@@ -162,9 +165,9 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
         game_results = [game_generator.get_results() for game_generator in finished_games]
         #game_results = [r.get for r in game_results]
         for history, policy_targets, value_targets in game_results:
-            x += history
-            y_policy += policy_targets
-            y_value = value_targets
+            x.append(history)
+            y_policy.append(policy_targets)
+            y_value.append(value_targets)
     return np.array(x), np.array(y_policy), np.array(y_value)
 
 
@@ -207,4 +210,19 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-train(Gamelogic.TicTacToe(), Config, 128, 4)
+#train(Gamelogic.TicTacToe(), Config, 128, 4)
+
+import time
+h, w, d = Config.board_dims[1:]
+agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=4)
+from keras.utils import multi_gpu_model
+agent = multi_gpu_model(agent, gpus=2)
+agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
+                                  optimizer=SGD(lr=0.001, momentum=0.9))
+print(time.time())
+generate_data(Gamelogic.TicTacToe(), agent, Config, 100)
+print(time.time())
+for i in range(100):
+    generate_game(Config, Gamelogic.TicTacToe())
+print(time.time())
+

@@ -2,7 +2,7 @@ import math
 import time
 import random
 import numpy as np
-import random
+import copy
 # from Othello import Gamelogic
 from TicTacToe.Config import policy_output_dim
 from TicTacToe.Gamelogic import TicTacToe
@@ -31,7 +31,7 @@ class Node:
         if parent:
             parent.add_child(self)  # adds this node to the parents list of childs
             self.game.execute_move(action)  # executes the move for this node
-            self.board_state = self.game.get_board()  # sets the board state for this node
+            self.board_state = np.copy(self.game.get_board())  # sets the board state for this node
             self.turn = self.game.get_turn()
             self.game.undo_move()  # resets the games board state
         else:
@@ -66,8 +66,8 @@ class MCTS:
     def __init__(self, game, start_state, agent):
         self.root = Node(game, None, None)
         self.game = game
-        self.root.board_state = start_state
-        self.start_state = start_state
+        self.root.board_state = np.copy(start_state)
+        self.start_state = np.copy(start_state)
         self.agent = agent
         self.T = 1
         self.level = 0
@@ -78,14 +78,11 @@ class MCTS:
 
     @staticmethod
     def search_nodechildren_for_state(node, state):
-        if node.get_board_state() == state:
-            return node
-        if not node.is_leaf_node():
-            possible_correct = None
-            for child in node.children:
-                possible_correct = MCTS.search_nodechildren_for_state(child, state)
-                if not possible_correct == None:
-                    return possible_correct
+        for child in node.children:
+            if np.array_equal(child.get_board_state(), state):
+                return child
+                
+                
 
     def find_node_given_state(self, state):
         correct = None

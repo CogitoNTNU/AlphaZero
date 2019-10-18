@@ -8,8 +8,8 @@
 # get_board()
 # get_turn()
 
-
 import numpy as np
+from FourInARow.Config import name, board_dims
 
 
 class FourInARow:
@@ -18,6 +18,8 @@ class FourInARow:
         """ A board of size (6, 7, 2) where the size is 7 along the horizontal axis and 6 along the vertical axis. """
         self.board = np.zeros((6, 7, 2), dtype=int)
         self.history = []
+        self.name = name
+        self.board_dims = board_dims
 
     def get_moves(self):
         """ Checks whether the uppermost space in the column is empty. """

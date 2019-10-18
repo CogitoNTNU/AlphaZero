@@ -11,7 +11,7 @@
 # TODO: update find moves
 
 import numpy as np
-import time
+from TicTacToe.Config import name, board_dims
 
 
 class TicTacToe:
@@ -20,6 +20,8 @@ class TicTacToe:
                                [[0, 0], [0, 0], [0, 0]],
                                [[0, 0], [0, 0], [0, 0]]])
         self.history = []
+        self.name = name
+        self.board_dims = board_dims
 
     def get_moves(self):
         return [x for x in range(9) if self.board[x // 3, x % 3, 0] == self.board[x // 3, x % 3, 1] == 0]
@@ -43,8 +45,8 @@ class TicTacToe:
             self.board[move // 3, move % 3, len(self.history) % 2] = 1
             self.history.append(move)
         else:
-            print('illegal move', move, self.history)
-            raise Exception("illegal move attempted: {} with history: {}".format(move, self.history))
+            print('illegal move')
+            #raise Exception("illegal move attempted: {} with history: {}".format(move, self.history))
         return self
     
     def player_turn(self):

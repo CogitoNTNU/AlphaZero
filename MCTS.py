@@ -3,16 +3,9 @@ import time
 import random
 import numpy as np
 import copy
-# from Othello import Gamelogic
-from TicTacToe.Config import policy_output_dim
-from TicTacToe.Gamelogic import TicTacToe
-from FourInARow.Gamelogic import FourInARow
-# from FourInARow.Config import policy_output_dim
+
 
 import loss
-import collections
-from FakeNN import agent0
-from TicTacToe import Config
 
 C_PUCT = math.sqrt(2)
 C_INIT = 1
@@ -63,9 +56,10 @@ class Node:
 
 class MCTS:
 
-    def __init__(self, game, start_state, agent):
+    def __init__(self, game, start_state, agent, Config):
         self.root = Node(game, None, None)
         self.game = game
+        self.Config = Config
         self.root.board_state = np.copy(start_state)
         self.start_state = np.copy(start_state)
         self.agent = agent
@@ -97,7 +91,7 @@ class MCTS:
     # Returning a dictionary with action as key and visit number as value
     def get_action_numbers(self, node):
         action_numbers = {}
-        for i in range(policy_output_dim):
+        for i in range(self.Config.policy_output_dim):
             action_numbers[i] = 0
 
         for child in node.children:
@@ -115,13 +109,13 @@ class MCTS:
     def get_posterior_probabilities(self):
         node = self.root
         tot = 0
-        post_prob = np.zeros(Config.policy_output_dim)
+        post_prob = np.zeros(self.Config.policy_output_dim)
 
         actions = self.get_action_numbers(node)
         for action in actions:
             tot += actions[action]
         for action in actions:
-            post_prob[Config.move_to_number(action)] = actions[action] / max(1, tot)
+            post_prob[self.Config.move_to_number(action)] = actions[action] / max(1, tot)
         return post_prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action

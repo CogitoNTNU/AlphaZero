@@ -3,11 +3,6 @@ import sys
 from time import sleep
 import copy
 
-from TicTacToe import Gamelogic
-from TicTacToe import Config
-#from FourInARow import Gamelogic
-#from FourInARow import Config    
-"""Kan ikke importe to gamelogic samtidig uten noe snedig triks"""
 
 #from MCTS import MCTS
 from Main import *
@@ -16,7 +11,8 @@ from Main import *
 
 class GameRendering:
 
-    def __init__(self, game, agent):
+
+    def __init__(self, game, agent, Config):
         """Initialize the pygame"""
         pygame.init()
         pygame.font.init()
@@ -26,6 +22,9 @@ class GameRendering:
         self.font_renderer = pygame.font.Font(self.default_font, self.text_size)
         """Variables"""
         self.game = copy.deepcopy(game)
+
+        self.Config = Config
+
         self.start_pos = np.copy(game.board)
         self.agent = agent
         self.side_length = 100
@@ -112,7 +111,7 @@ class GameRendering:
             
             elif not self.game.is_final():
                 """If machines turn, machine do move"""
-                tree = MCTS.MCTS(self.game, self.game.board, self.agent)
+                tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
                     for searches in range(1000):
                         tree.search()
@@ -137,13 +136,13 @@ class GameRendering:
             possible_moves = self.game.get_moves()
             for move in possible_moves:
                 self.label = self.font_renderer.render(str(round(self.weights[move],4)),1,self.font_color)
-                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((8-Config.move_to_number(move))//self.width) - self.label.get_height() ])
+                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((8-self.Config.move_to_number(move))//self.width) - self.label.get_height() ])
                 pygame.display.flip()
         elif self.fourinarow:
             possible_moves = self.game.get_moves()
             for move in possible_moves:
                 self.label = self.font_renderer.render(str(round(self.weights[move],4)),1,self.font_color)
-                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length // self.height) - self.label.get_height() ])
+                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length // self.height) - self.label.get_height() ])
                 pygame.display.flip()
 
 
@@ -189,10 +188,11 @@ class GameRendering:
                 move = (self.width * self.height) - (move)//self.width * self.width + (move) % self.width-self.width
             pygame.draw.circle(self.screen, new_possible_color, [
                     (self.side_length + self.line_th) // 2 + self.side_length * (
-                                (Config.move_to_number(move)) % self.width),
+                                (self.Config.move_to_number(move)) % self.width),
                     (self.side_length + self.line_th) // 2 + self.side_length * (
-                                (Config.move_to_number(move)) // self.width)], self.piece_size)
+                                (self.Config.move_to_number(move)) // self.width)], self.piece_size)
         pygame.display.flip()
+
 
     
     def _render_tictactoe(self):
@@ -228,7 +228,6 @@ class GameRendering:
         """Find the mouse position and execute move based on it"""
         if self.tictactoe:
             self.mouse_pos=(self.mouse_pos[0],self.height*self.side_length-self.mouse_pos[1])
-        self.game.execute_move(Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
+        self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
         sleep(0.2) # Delay for preventing multiple presses accidently
-
 

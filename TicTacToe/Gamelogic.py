@@ -139,5 +139,3 @@ class TicTacToe:
                 string += ' ' * int(self.board[x, y, 0] == self.board[x, y, 1] == 0)
                 string += '|'
             print(string)
-
-   

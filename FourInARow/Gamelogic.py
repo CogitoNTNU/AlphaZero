@@ -32,7 +32,6 @@ class FourInARow:
     def __find_uppermost_empty(self, column):
         """
         Returns the uppermost empty row in the column
-
         :param column: The column to check
         """
         for i in range(0, self.board.shape[0]):

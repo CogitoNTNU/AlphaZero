@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from Main import *
+
 #from TicTacToe import Gamelogic
 #from TicTacToe import Config
 from FourInARow import Gamelogic
@@ -21,3 +22,4 @@ agent.load_weights('Models/FourInARow/9.h5')
 
 """start game-loop"""
 rendering = GameRendering(game, agent, Config)
+

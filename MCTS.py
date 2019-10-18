@@ -24,7 +24,7 @@ class Node:
         if parent:
             parent.add_child(self)  # adds this node to the parents list of childs
             self.game.execute_move(action)  # executes the move for this node
-            self.board_state = self.game.get_board()  # sets the board state for this node
+            self.board_state = np.copy(self.game.get_board())  # sets the board state for this node
             self.turn = self.game.get_turn()
             self.game.undo_move()  # resets the games board state
         else:
@@ -72,14 +72,11 @@ class MCTS:
 
     @staticmethod
     def search_nodechildren_for_state(node, state):
-        if node.get_board_state() == state:
-            return node
-        if not node.is_leaf_node():
-            possible_correct = None
-            for child in node.children:
-                possible_correct = MCTS.search_nodechildren_for_state(child, state)
-                if not possible_correct == None:
-                    return possible_correct
+        for child in node.children:
+            if np.array_equal(child.get_board_state(), state):
+                return child
+                
+                
 
     def find_node_given_state(self, state):
         correct = None

@@ -3,12 +3,14 @@ import sys
 from time import sleep
 import copy
 
+
 #from MCTS import MCTS
 from Main import *
 """Weird bug when trying to import MCTS, so had to star import from Main"""
 
 
 class GameRendering:
+
 
     def __init__(self, game, agent, Config):
         """Initialize the pygame"""
@@ -20,7 +22,9 @@ class GameRendering:
         self.font_renderer = pygame.font.Font(self.default_font, self.text_size)
         """Variables"""
         self.game = copy.deepcopy(game)
+
         self.Config = Config
+
         self.start_pos = np.copy(game.board)
         self.agent = agent
         self.side_length = 100
@@ -189,6 +193,7 @@ class GameRendering:
                                 (self.Config.move_to_number(move)) // self.width)], self.piece_size)
         pygame.display.flip()
 
+
     
     def _render_tictactoe(self):
         """Update screen for Tic tac toe"""
@@ -225,3 +230,4 @@ class GameRendering:
             self.mouse_pos=(self.mouse_pos[0],self.height*self.side_length-self.mouse_pos[1])
         self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
         sleep(0.2) # Delay for preventing multiple presses accidently
+

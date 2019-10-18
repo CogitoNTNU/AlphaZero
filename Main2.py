@@ -13,8 +13,8 @@ import os
 
 # Importing other libraries
 import numpy as np
-import multiprocess
-from multiprocess.managers import BaseManager
+#import multiprocess
+#from multiprocess.managers import BaseManager
 import tensorflow as tf
 #from pathos.multiprocessing import ProcessingPool as Pool
 
@@ -37,10 +37,10 @@ class KerasModel():
         with self.mutex:
             self.model.fit(x=x, y=[y_pol, y_val], batch_size=batch_size, epochs=num_train_epochs, callbacks=[])
 
-class KerasManager(BaseManager):
-    pass
+#class KerasManager(BaseManager):
+#    pass
 
-KerasManager.register('KerasModel', KerasModel)
+#KerasManager.register('KerasModel', KerasModel)
 
 def work(kerasmodel, h, w, d, num_filters, config, num_res_blocks):
     kerasmodel.initialize(h, w, d, num_filters, config, num_res_blocks)
@@ -48,7 +48,7 @@ def work(kerasmodel, h, w, d, num_filters, config, num_res_blocks):
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, game, dirichlet_noise=True):
     global agent
-    tree = MCTS.MCTS(game, game.get_board(), agent)
+    tree = MCTS.MCTS(game, game.get_board(), None)
     #tree.dirichlet_noise = dirichlet_noise
     #tree.NN_input_dim = config.board_dims
     #tree.policy_output_dim = config.policy_output_dim
@@ -132,7 +132,7 @@ class GameGenerator:
 
 
 # Generating data by self-play
-def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
+def generate_data(game, agent, config, num_sim=100, num_search=100):
     #tree = get_tree(config, agent, game)
 
     game_generators = [GameGenerator(config) for _ in range(num_sim)]
@@ -148,7 +148,8 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
             res = [game_generator.run_part1() for game_generator in game_generators]
             #res = [r.get() for r in res]
             batch = np.array([result for game_generator, result in res])
-            results = agent.predict(batch)
+            with tf.device('/gpu:0'):
+                results = agent.predict(batch)
             #print(np.array([results[0][0], results[1][0]]))
             res = [res[i][0].run_part2(np.array([results[0][i], [results[1][i]]])) for i in range(len(res))]
             #game_generators = [r.get() for r in res]
@@ -159,40 +160,46 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=100):
         finished_games = []
         for game_generator, finished in res:
             if finished:
+                #print("Ferdig")
                 finished_games.append(game_generator)
-                break
+                continue
             game_generators.append(game_generator)
         game_results = [game_generator.get_results() for game_generator in finished_games]
         #game_results = [r.get for r in game_results]
         for history, policy_targets, value_targets in game_results:
+            #print("Legger til resultat")
             x.append(history)
             y_policy.append(policy_targets)
             y_value.append(value_targets)
-    return np.array(x), np.array(y_policy), np.array(y_value)
+    return np.concatenate(x, axis=0), np.concatenate(y_policy, axis=0), np.concatenate(y_value, axis=0)
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
 def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=10, games_each_epoch=100,
-          batch_size=64, num_train_epochs=1):
+          batch_size=64, num_train_epochs=10):
 
     h, w, d = config.board_dims[1:]
 
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
-    agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.001, momentum=0.9))
+    agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'], optimizer=SGD(lr=0.001, momentum=0.9))
     agent.summary()
 
     for epoch in range(epochs):
-        x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
+        x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim) #games=games_each_epoch)
         print("Epoch")
-        print(x.shape)
-        raw = agent.predict(x)
-        for num in range(len(x)):
-            print("targets-predictions")
-            print(y_pol[num], y_val[num])
-            print(softmax(y_pol[num], raw[0][num]), raw[1][num])
-
-        agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
+        print(x)
+        print(y_pol)
+        print(y_val)
+        #raw = agent.predict(x)
+        #for num in range(len(x)):
+        #    print("targets-predictions")
+        #    print(y_pol[num], y_val[num])
+        #    print(softmax(y_pol[num], raw[0][num]), raw[1][num])
+        import time
+        print(time.time())
+        with tf.device('/cpu:0'):
+            agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
+        print(time.time())
         print("end epoch")
         agent.save_weights("Models/" + Config.name + "/" + str(epoch) + ".h5")
     return agent
@@ -210,19 +217,20 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-#train(Gamelogic.TicTacToe(), Config, 128, 4)
+train(Gamelogic.TicTacToe(), Config, 128, 4)
 
-import time
-h, w, d = Config.board_dims[1:]
-agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=4)
-from keras.utils import multi_gpu_model
-agent = multi_gpu_model(agent, gpus=2)
-agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                                  optimizer=SGD(lr=0.001, momentum=0.9))
-print(time.time())
-generate_data(Gamelogic.TicTacToe(), agent, Config, 100)
-print(time.time())
-for i in range(100):
-    generate_game(Config, Gamelogic.TicTacToe())
-print(time.time())
+#import time
+#h, w, d = Config.board_dims[1:]
+#agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=4)
+#from keras.utils import multi_gpu_model
+#agent = multi_gpu_model(agent, gpus=2)
+#agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
+#                                  optimizer=SGD(lr=0.001, momentum=0.9))
+#generate_data(Gamelogic.TicTacToe(), agent, Config, 10, 10)
+#print(time.time())
+#generate_data(Gamelogic.TicTacToe(), agent, Config, 100)
+#print(time.time())
+#for i in range(100):
+#    generate_game(Config, Gamelogic.TicTacToe())
+#print(time.time())
 

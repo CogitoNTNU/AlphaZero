@@ -8,8 +8,8 @@
 # get_board()
 # get_turn()
 
-
 import numpy as np
+from FourInARow.Config import name, board_dims
 
 
 class FourInARow:
@@ -18,6 +18,8 @@ class FourInARow:
         """ A board of size (6, 7, 2) where the size is 7 along the horizontal axis and 6 along the vertical axis. """
         self.board = np.zeros((6, 7, 2), dtype=int)
         self.history = []
+        self.name = name
+        self.board_dims = board_dims
 
     def get_moves(self):
         """ Checks whether the uppermost space in the column is empty. """
@@ -30,7 +32,6 @@ class FourInARow:
     def __find_uppermost_empty(self, column):
         """
         Returns the uppermost empty row in the column
-
         :param column: The column to check
         """
         for i in range(0, self.board.shape[0]):

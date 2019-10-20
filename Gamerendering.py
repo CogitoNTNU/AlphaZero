@@ -58,6 +58,17 @@ class GameRendering:
         while True:
             self.mouse_pos = pygame.mouse.get_pos()
             if self.game.is_final():
+                """show winning move"""
+                self.update_screen()
+                if self.game.get_winning_pieces() is not None:
+                    pygame.draw.line(self.screen, self.white,
+                                 [(self.side_length + self.line_th) // 2 + self.side_length * self.game.get_winning_pieces()[0][1], (self.side_length + self.line_th) // 2 + self.side_length * (self.height - self.game.get_winning_pieces()[0][0] - 1)],
+                                 [(self.side_length + self.line_th) // 2 + self.side_length * self.game.get_winning_pieces()[1][1], (self.side_length + self.line_th) // 2 + self.side_length * (self.height - self.game.get_winning_pieces()[1][0] - 1)],
+                                 self.line_th)
+                    pygame.display.flip()
+                sleep(1)
+                sleep(4)
+
                 """Show death screen"""
                 self.screen.fill(self.black)
                 myfont = pygame.font.SysFont(self.default_font, 50)
@@ -113,9 +124,9 @@ class GameRendering:
                 """If machines turn, machine do move"""
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
-                    for searches in range(1000):
+                    for searches in range(100):
                         tree.search()
-                        if searches%200 == 0:
+                        if searches%50 == 0:
                             """update weight on screen every 200 search"""
                             self.weights = tree.get_posterior_probabilities()
                             self.update_screen()

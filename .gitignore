@@ -1,2 +1,4 @@
 .idea/
 **/__pycache__/
+**/TicTacToe/__pycache__/
+**/FourInARow/__pycache__/

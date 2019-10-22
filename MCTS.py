@@ -85,6 +85,7 @@ class MCTS:
         self.level = 0
         self.leafNode = None
         self.agent = agent
+        self.dirichlet_noice = True
 
     def reset_search(self):
         self.root = Node(self.game, None, None)
@@ -215,6 +216,8 @@ class MCTS:
 
         raw_pred = result #self.agent.predict(np.array([game.get_board()]))
         result = loss.softmax(np.array(game.get_legal_NN_output()), result[0])
+        if self.dirichlet_noice and parent == self.root:
+            result = (1 - 0.25) * result + 0.25 * np.random.gamma(0.9, 1, len(result))
         # result = self.agent.predict(np.array([parent.get_board_state()]))
         #print(result)
         if not self.game.is_final():
@@ -222,7 +225,7 @@ class MCTS:
             for move in valid_moves:
                 Node(game, parent, move, result[move])
             # parent.n += 1
-            self.back_propagate(parent, raw_pred[1][0])
+            self.back_propagate(parent, raw_pred[1][0] if game.get_turn() == self.root.turn else - raw_pred[1][0])
             self.level = 0
         else:
             # parent.n += 1
@@ -281,7 +284,7 @@ class MCTS:
             for move in valid_moves:
                 Node(game, parent, move, result[0][move])
             # parent.n += 1
-            self.back_propagate(parent, raw_pred[1][0][0])
+            self.back_propagate(parent, raw_pred[1][0][0] if game.get_turn() == 0 else - raw_pred[1][0][0])
             self.level = 0
         else:
             # parent.n += 1

@@ -191,6 +191,7 @@ class MCTS:
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
         game = self.game
         parent = self.root
+        self.level = 0
         # print("start:", game.history)
         while not parent.is_leaf_node():
             best_puct = None
@@ -222,7 +223,7 @@ class MCTS:
             for move in valid_moves:
                 Node(game, parent, move, result[move])
             # parent.n += 1
-            self.back_propagate(parent, raw_pred[1][0])
+            self.back_propagate(parent, raw_pred[1][0] if self.level % 2 == 0 else -raw_pred[1][0])
             self.level = 0
         else:
             # parent.n += 1
@@ -232,18 +233,18 @@ class MCTS:
     def back_propagate(self, node, t):
         game = self.game
         if game.is_final():
-            result=game.get_outcome()[node.parent.turn]
+            result = game.get_outcome()[self.level % 2] #[node.parent.turn]
             node.t += result
             node.n += 1
             game.undo_move()
-            self.back_propagate(node.get_parent(), -result)
+            self.back_propagate(node.get_parent(), result)
         else:
             node.t += t
             node.n += 1
 
             if node.get_parent() is not None:
                 game.undo_move()
-                self.back_propagate(node.get_parent(), -t)
+                self.back_propagate(node.get_parent(), t)
 
     def PUCT(self, node, child):
         N = child.n

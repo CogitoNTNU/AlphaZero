@@ -5,10 +5,10 @@ import Files
 
 # from Othello import Gamerendering
 # from Othello import Gamelogic
-#from TicTacToe import Gamelogic
-#from TicTacToe import Config
-from FourInARow import Gamelogic
-from FourInARow import Config
+from TicTacToe import Gamelogic
+from TicTacToe import Config
+#from FourInARow import Gamelogic
+#from FourInARow import Config
 from keras.optimizers import SGD
 from loss import softmax_cross_entropy_with_logits, softmax
 
@@ -35,7 +35,7 @@ def get_tree(config, game, dirichlet_noise=True):
     return tree
 
 def get_game_object():
-    return Gamelogic.FourInARow()
+    return Gamelogic.TicTacToe()
 
 
 class GameGenerator:
@@ -159,4 +159,4 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-train(Gamelogic.FourInARow(), Config, 128, 5)
+train(Gamelogic.TicTacToe(), Config, 128, 5)

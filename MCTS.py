@@ -99,7 +99,8 @@ class MCTS:
             if np.array_equal(child.get_board_state(), state):
                 return child
                 
-                
+    def set_evaluation(self, agent):
+        self.agent = agent
 
     def find_node_given_state(self, state):
         correct = None

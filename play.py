@@ -2,10 +2,10 @@
 
 from Main3 import *
 
-#from TicTacToe import Gamelogic
-#from TicTacToe import Config
-from FourInARow import Gamelogic
-from FourInARow import Config
+from TicTacToe import Gamelogic
+from TicTacToe import Config
+#from FourInARow import Gamelogic
+#from FourInARow import Config
 from time import sleep
 from Gamerendering import GameRendering
 from keras.models import load_model
@@ -17,9 +17,8 @@ agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
                   optimizer=SGD(lr=0.001, momentum=0.9))
 
 """retrieve weights file"""
-game = Gamelogic.FourInARow()
-agent.load_weights('Models/FourInARow/36_1571808077.8643444.h5')
-
+game = Gamelogic.TicTacToe()
+agent.load_weights('Models/TicTacToe/21_1571765446.1245914.h5')
 
 """start game-loop"""
 rendering = GameRendering(game, agent, Config)

@@ -167,6 +167,47 @@ class FourInARow:
         game = self.create_game(board)
         return game.get_moves()
 
+    def get_winning_pieces(self):
+        """ Returns true if the current board configuration is a winning configuration  """
+        if len(self.history) == 0:
+            return False
+        """ The possible directions """
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+        player = 1 * (len(self.history) % 2 == 0)
+        column = self.history[-1]
+        columns = []
+        if column is None:
+            for i in range(self.board.shape[1]):
+                if self.__find_uppermost_empty(i) > 0:
+                    columns.append(i)
+        else:
+            columns.append(column)
+        for column in columns:
+            row = self.__find_uppermost_empty(column) - 1
+            for dir in directions:
+                num_in_row = 1
+
+                """ Search in positive direction """
+                r, c = row, column
+                r += dir[0]
+                c += dir[1]
+                while self.__valid_coordinates(r, c) and self.board[r, c, player]:
+                    num_in_row += 1
+                    r += dir[0]
+                    c += dir[1]
+
+                """ Search in negative direction """
+                r, c = row, column
+                r -= dir[0]
+                c -= dir[1]
+                while self.__valid_coordinates(r, c) and self.board[r, c, player]:
+                    num_in_row += 1
+                    r -= dir[0]
+                    c -= dir[1]
+                if num_in_row >= 4:
+                    return (r + 1 * dir[0], c + 1 * dir[1]), (r + 4 * dir[0], c + 4 * dir[1])
+        return None
+
     @classmethod
     def create_game(cls, state):
         game = cls()

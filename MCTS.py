@@ -86,10 +86,12 @@ class MCTS:
         self.leafNode = None
         self.agent = agent
         self.dirichlet_noice = True
+        self.current_player = game.get_turn()
 
     def reset_search(self):
         self.root = Node(self.game, None, None)
         self.root.board_state = self.game.get_board()
+        self.current_player = self.game.get_turn()
 
     @staticmethod
     def search_nodechildren_for_state(node, state):
@@ -225,7 +227,7 @@ class MCTS:
             for move in valid_moves:
                 Node(game, parent, move, result[move])
             # parent.n += 1
-            self.back_propagate(parent, raw_pred[1][0] if game.get_turn() == self.root.turn else - raw_pred[1][0])
+            self.back_propagate(parent, -raw_pred[1][0])# if game.get_turn() == self.current_player else -raw_pred[1][0])
             self.level = 0
         else:
             # parent.n += 1
@@ -235,7 +237,7 @@ class MCTS:
     def back_propagate(self, node, t):
         game = self.game
         if game.is_final():
-            result=game.get_outcome()[node.parent.turn]
+            result = 1 #game.get_outcome()[self.current_player] #[node.parent.turn]
             node.t += result
             node.n += 1
             game.undo_move()
@@ -284,7 +286,7 @@ class MCTS:
             for move in valid_moves:
                 Node(game, parent, move, result[0][move])
             # parent.n += 1
-            self.back_propagate(parent, raw_pred[1][0][0] if game.get_turn() == 0 else - raw_pred[1][0][0])
+            self.back_propagate(parent, -raw_pred[1][0][0])# if game.get_turn() == self.current_player  else -raw_pred[1][0][0])
             self.level = 0
         else:
             # parent.n += 1

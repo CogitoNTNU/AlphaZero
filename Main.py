@@ -5,10 +5,10 @@ import Files
 
 # from Othello import Gamerendering
 # from Othello import Gamelogic
-from TicTacToe import Gamelogic
-from TicTacToe import Config
-#from FourInARow import Gamelogic
-#from FourInARow import Config
+#from TicTacToe import Gamelogic
+#from TicTacToe import Config
+from FourInARow import Gamelogic
+from FourInARow import Config
 from keras.optimizers import SGD
 from loss import softmax_cross_entropy_with_logits, softmax
 
@@ -35,7 +35,7 @@ def get_tree(config, game, dirichlet_noise=True):
     return tree
 
 def get_game_object():
-    return Gamelogic.TicTacToe()
+    return Gamelogic.FourInARow()
 
 
 class GameGenerator:
@@ -75,7 +75,7 @@ class GameGenerator:
 
 
 # Generating data by self-play
-def generate_data(game, agent, config, num_sim=100, games=1, num_search=130):
+def generate_data(game, agent, config, num_sim=1, games=1, num_search=130):
     #tree = get_tree(config, agent, game)
 
     game_generators = [GameGenerator(config) for _ in range(num_sim)]
@@ -113,13 +113,13 @@ def generate_data(game, agent, config, num_sim=100, games=1, num_search=130):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=100, epochs=1000000, games_each_epoch=10,
+def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=1000000, games_each_epoch=10,
           batch_size=32, num_train_epochs=10):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.001, momentum=0.9))
+                  optimizer=SGD(lr=0.0005, momentum=0.9))
     #agent.summary()
 
     # game.__init__()
@@ -159,4 +159,4 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-train(Gamelogic.TicTacToe(), Config, 128, 5)
+train(Gamelogic.FourInARow(), Config, 128, 5)

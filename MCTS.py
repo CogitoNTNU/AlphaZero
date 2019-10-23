@@ -85,7 +85,7 @@ class MCTS:
         self.level = 0
         self.leafNode = None
         self.agent = agent
-        self.dirichlet_noice = True
+        self.dirichlet_noice = False#True
         self.current_player = game.get_turn()
 
     def reset_search(self):

@@ -18,7 +18,7 @@ agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
 
 """retrieve weights file"""
 game = Gamelogic.FourInARow()
-agent.load_weights('Models/FourInARow/6_1571773688.6859412.h5')
+agent.load_weights('Models/FourInARow/36_1571808077.8643444.h5')
 
 
 """start game-loop"""

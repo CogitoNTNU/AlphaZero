@@ -57,15 +57,17 @@ def generate_data(game, agent, config, num_sim=100, games=1):
         while not game.is_final():
             tree.reset_search()
             #tree.root.board_state = game.get_board()
+            print("num_sim", num_sim)
             tree.search_series(num_sim)
             # tree.search_series(10)
             state = game.get_state()
             temp_move = tree.get_temperature_move(state)
-            print(tree.get_temperature_probabilities(state))
+            print("move:", temp_move)
+            print("temp_probs:", tree.get_temperature_probabilities(state))
             history.append(temp_move)
             policy_targets.append(np.array(tree.get_posterior_probabilities(state)))
-            print(tree.get_prior_probabilities(state)) #reshape(1,3,3,2)
-            print(policy_targets[-1])
+            print("prior_probs:", tree.get_prior_probabilities(state)) #reshape(1,3,3,2)
+            print("pol_targets", policy_targets[-1])
             player_moved_list.append(game.get_turn())
             positions.append(np.array(game.get_board()))
 
@@ -73,6 +75,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
         game_outcome = game.get_outcome()
         value_targets = [game_outcome[x] for x in player_moved_list]
+        print("val_targets:", value_targets)
 
         x = x + positions
         y_policy = y_policy + policy_targets
@@ -84,7 +87,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=125, epochs=2000, games_each_epoch=1,
+def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=2000, games_each_epoch=1,
           batch_size=32, num_train_epochs=3):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
@@ -108,7 +111,8 @@ def train(game, config, num_filters, num_res_blocks, num_sim=125, epochs=2000, g
         print("Epoch")
         print(x.shape)
         raw = agent.predict(x)
-
+        for i in range(len(x)):
+            print("predictions", softmax(y_pol[i], raw[0][i]), raw[1][i])
         agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
         print("end epoch")
         if (epoch % 10 == 0):

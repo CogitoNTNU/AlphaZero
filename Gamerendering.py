@@ -89,7 +89,7 @@ class GameRendering:
                 self.count += 1 #Switches sides
 
                 sleep(1)    #Catch glitchy graohics
-                sleep(4)    #Hold the death screen open
+                # sleep(4)    #Hold the death screen open
                 """clean the board and graphics"""
                 self.weights = [0]*len(self.weights)
                 self.game.board = np.copy(self.start_pos)   #don't want to change it
@@ -111,18 +111,26 @@ class GameRendering:
             
             elif not self.game.is_final():
                 """If machines turn, machine do move"""
-                tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
+                # tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
+                tree = MCTS.MCTS()
+                tree.NN_input_dim = Config.board_dims
+                tree.policy_output_dim = Config.policy_output_dim
+                tree.NN_output_to_moves_func = Config.NN_output_to_moves
+                tree.move_to_number_func = Config.move_to_number
+                tree.number_to_move_func = Config.number_to_move
+                tree.set_evaluation(self.agent)
+                tree.set_game(self.game)
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
-                    for searches in range(1000):
+                    for searches in range(2):
                         tree.search()
                         if searches%200 == 0:
                             """update weight on screen every 200 search"""
-                            self.weights = tree.get_posterior_probabilities()
+                            self.weights = tree.get_posterior_probabilities(self.game.get_state())
                             self.update_screen()
                             self.see_valuation()
                 else:
-                    tree.search_series(100)
-                predict = tree.get_most_searched_move(tree.root)
+                    tree.search_series(2)
+                predict = tree.get_most_searched_move(self.game.get_state())
 #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
                 self.game.execute_move(predict)
                 self.update_screen()

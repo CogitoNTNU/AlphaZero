@@ -77,7 +77,7 @@ class MCTS:
         total_visits = self.state_visits[state]
         for action in self.pos_move_dict[state]:
             prob[self.move_to_number_func(action)] = self.search_dict[str(state) + '-' + str(action)][0] / (
-                    total_visits - 1)
+                    total_visits)
         return prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
@@ -94,7 +94,7 @@ class MCTS:
         temp_num = np.random.choice(temp_probs.shape[0], 1, p=temp_probs)[0]
         return self.number_to_move_func(temp_num)
 
-    def get_most_seached_move(self, state):
+    def get_most_searched_move(self, state):
         probs = self.get_posterior_probabilities(state)
         return self.number_to_move_func(probs.argmax())
 

@@ -42,12 +42,16 @@ class MCTS:
         self.time_3 = 0
         self.time_4 = 0
 
+        self.search_stack = []
+
     def reset_search(self):
         self.search_dict = {}
         self.pos_move_dict = {}
         self.state_visits = {}
 
         self.tree_children = [0 for _ in range(61)]
+
+        self.search_stack = []
 
     # Setting the game the MCTS will be used on
     def set_game(self, game):
@@ -108,11 +112,34 @@ class MCTS:
         # Selection - selecting the path from
         now = time.time()
         state, action = self._selection()
+        self.search_stack.append((state, action))
         self.time_1 += time.time() - now
 
         # The search traversed an internal node
         if action is not None:
-            backp_value, outcome, finished = self.search()
+            self.search()
+            
+        if self.game.is_final():
+            self.return_vars = (None, self.game.get_outcome(), True)
+            return None
+
+        # Evaluation
+        now = time.time()
+        return self.game.get_board().reshape(self.NN_input_dim)
+
+        
+    def backpropagate(result):
+        value, priors = self._evaluate(result)
+        state, action = self.search_stack.pop()
+        # Expansion
+        self._expansion(state, priors)
+        self.tree_children[len(self.game.history)] += 1
+        self.time_3 += time.time() - now
+        self.return_vars(value, [], False)
+
+        while len(self.search_stack):
+            state, action = self.search_stack.pop()
+            backp_value, outcome, finished = self.return_vars
             now = time.time()
             # Negating the back-propagated value if it is the opponent to move
             to_move = self.game.get_turn()
@@ -126,20 +153,8 @@ class MCTS:
             # Backward pass
             self._backward_pass(state, str(state) + '-' + str(action), backp_value)
             self.time_2 += time.time() - now
-            return backp_value, outcome, finished
+            self.return_vars(backp_value, outcome, finished)
 
-        if self.game.is_final():
-            return None, self.game.get_outcome(), True
-
-        # Evaluation
-        now = time.time()
-        value, priors = self._evaluate(self.game.get_board())
-
-        # Expansion
-        self._expansion(state, priors)
-        self.tree_children[len(self.game.history)] += 1
-        self.time_3 += time.time() - now
-        return value, [], False
 
     # Selecting the path from the root node to the leaf node and returning the new state and the last action executed
     def _selection(self):
@@ -186,12 +201,12 @@ class MCTS:
         return Q + U
 
     # Evaluate a state using the evaluation algorithm and returning prior policy probabilities and value
-    def _evaluate(self, state, epsilon=0.000001):
+    def _evaluate(self, result, epsilon=0.000001):
         # return 0, {str(act): 1 / len(self.game.get_moves()) for num, act in enumerate(self.game.get_moves())}
         # return random.uniform(-1, 1), {str(act): random.random() for num, act in enumerate(self.game.get_moves())}
 
-        state = state.reshape(self.NN_input_dim)
-        policy, value = self.eval.predict(state)
+        #state = state.reshape(self.NN_input_dim)
+        policy, value = result
         policy = policy.flatten()
 
         legal_moves = np.array(self.game.get_legal_NN_output())
@@ -207,7 +222,7 @@ class MCTS:
             noise = np.random.dirichlet(np.array([self.alpha for _ in range(num_legal_moves)]), (1))
             noise = noise.reshape(noise.shape[1])
 
-            return value, {str(act): (1 - self.epsilon) * (policy_norm[num] + self.epsilon * noise[num]) for num, act in
+            return value, {str(act): (1 - self.epsilon) * policy_norm[num] + self.epsilon * noise[num] for num, act in
                            enumerate(outp)}
         else:
             return value, {str(act): policy_norm[num] for num, act in enumerate(outp)}

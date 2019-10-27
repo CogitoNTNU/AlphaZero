@@ -63,4 +63,4 @@ for opponent in os.listdir("Models/FourInARow/"):
             draw += game.get_outcome()[player_start] == 0
             sum += 1
             print("Finished\n\n")
-    print("Result against", opponent, "-", won, "/", draw, "/", sum-won-draw)
+    print("Result against", opponent, "-", won, "/", draw, "/", sum - won - draw)

@@ -3,24 +3,21 @@ import ResNet
 import MCTS
 import Files
 
+# from Othello import Gamerendering
+# from Othello import Gamelogic
+#from TicTacToe import Gamelogic
+#from TicTacToe import Config
 from FourInARow import Gamelogic
 from FourInARow import Config
-# from TicTacToe import Gamelogic
-# from TicTacToe import Config
-#from FourInARow import Gamelogic
-#from FourInARow import Config
 from keras.optimizers import SGD
 from loss import softmax_cross_entropy_with_logits, softmax
-#import NN2
 
-# Importing other libraries
 import numpy as np
 
-# TODO: game outcome not propagated correctly?
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
-    tree = MCTS.MCTS()
+    tree = MCTS.MCTS()#(game, game.get_board(), None, config)
     tree.dirichlet_noise = dirichlet_noise
     tree.NN_input_dim = config.board_dims
     tree.policy_output_dim = config.policy_output_dim
@@ -31,70 +28,101 @@ def get_tree(config, agent, game, dirichlet_noise=True):
     tree.set_game(game)
     return tree
 
+def get_game_object():
+    return Gamelogic.FourInARow()
+
+
+class GameGenerator:
+    def __init__(self, config, agent):
+        self.game = get_game_object()
+        self.tree = get_tree(config, agent, self.game)
+        self.history = []
+        self.policy_targets = []
+        self.player_moved_list = []
+        self.positions = []
+
+    def run_part1(self):
+        return self.tree.search()
+
+    def run_part2(self, result):
+        self.tree.backpropagate(result)
+        return self
+
+    def execute_best_move(self):
+        state = self.game.get_state()
+        temp_move = self.tree.get_temperature_move(state)
+
+        self.history.append(temp_move)
+        self.policy_targets.append(np.array(self.tree.get_posterior_probabilities(state)))
+        self.player_moved_list.append(self.game.get_turn())
+        self.positions.append(np.array(self.game.get_board()))
+        self.game.execute_move(temp_move)
+        return self, self.game.is_final()
+
+    def reset_tree(self):
+        self.tree.reset_search()
+        #self.tree.root.board_state = self.game.get_board()
+
+    def get_results(self):
+        game_outcome = self.game.get_outcome()
+        value_targets = [game_outcome[x] for x in self.player_moved_list]
+        return np.array(self.positions), np.array(self.policy_targets), np.array(value_targets)
+
 
 # Generating data by self-play
-def generate_data(game, agent, config, num_sim=100, games=1):
-    tree = get_tree(config, agent, game)
+def generate_data(game, agent, config, num_sim=1, games=1, num_search=30):
+    #tree = get_tree(config, agent, game)
+
+    game_generators = [GameGenerator(config, agent) for _ in range(num_sim)]
 
     x = []
     y_policy = []
     y_value = []
 
-    for curr_game in range(games):
-
-        game.__init__()
-        # game.execute_move(0)
-        # game.execute_move(3)
-        # game.execute_move(1)
-        # game.execute_move(4)
-        # game.execute_move(6)
-        # game.execute_move(7)
-        history = []
-        policy_targets = []
-        player_moved_list = []
-        positions = []
-
-        while not game.is_final():
-            tree.reset_search()
-            #tree.root.board_state = game.get_board()
-            print("num_sim", num_sim)
-            tree.search_series(num_sim)
-            # tree.search_series(10)
-            state = game.get_state()
-            temp_move = tree.get_temperature_move(state)
-            print("move:", temp_move)
-            print("temp_probs:", tree.get_temperature_probabilities(state))
-            history.append(temp_move)
-            policy_targets.append(np.array(tree.get_posterior_probabilities(state)))
-            print("prior_probs:", tree.get_prior_probabilities(state)) #reshape(1,3,3,2)
-            print("pol_targets", policy_targets[-1])
-            player_moved_list.append(game.get_turn())
-            positions.append(np.array(game.get_board()))
-
-            game.execute_move(temp_move)
-
-        game_outcome = game.get_outcome()
-        value_targets = [game_outcome[x] for x in player_moved_list]
-        print("val_targets:", value_targets)
-
-        x = x + positions
-        y_policy = y_policy + policy_targets
-        y_value = y_value + value_targets
-
-        print("History:", history)
-
-    return np.array(x), np.array(y_policy), np.array(y_value)
+    while len(game_generators):
+        res = [game_generator.reset_tree() for game_generator in game_generators]
+        for i in range(num_search):
+            res = [game_generator.run_part1() for game_generator in game_generators]
+            to_predict = []
+            to_predict_generators = []
+            no_predict_generators = []
+            for i in range(len(res)):
+                if res[i] is not None:
+                    to_predict.append(res[i])
+                    to_predict_generators.append(game_generators[i])
+                else: 
+                    no_predict_generators.append(game_generators[i])
+            if len(to_predict):
+                batch = np.array(to_predict)
+                results = agent.predict(batch)
+            res = [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in range(len(to_predict_generators))] + [no_predict_generators[i].run_part2(None) for i in range(len(no_predict_generators))]
+        res = [game_generator.execute_best_move() for game_generator in game_generators]
+        game_generators = []
+        finished_games = []
+        for game_generator, finished in res:
+            if finished:
+                finished_games.append(game_generator)
+                continue
+            game_generators.append(game_generator)
+        game_results = [game_generator.get_results() for game_generator in finished_games]
+        for history, policy_targets, value_targets in game_results:
+            x.append(history)
+            y_policy.append(policy_targets)
+            y_value.append(value_targets)
+        #with open("test.txt", "a") as f:
+        #    f.write("antall spill igjen: " + str(len(game_generators)) + "\n")
+    return np.concatenate(x, axis=0), np.concatenate(y_policy, axis=0), np.concatenate(y_value, axis=0)
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=200, games_each_epoch=10,
-          batch_size=32, num_train_epochs=3):
+def train(game, config, num_filters, num_res_blocks, num_sim=10, epochs=1000000, games_each_epoch=10,
+          batch_size=32, num_train_epochs=10):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
     agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.001, momentum=0.9))
-    agent.summary()
+                  optimizer=SGD(lr=0.0005, momentum=0.9))
+    #agent.summary()
 
     # game.__init__()
     # game.execute_move(0)
@@ -105,20 +133,24 @@ def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=200, ga
     # game.execute_move(7)
 
     # print(agent.predict(game.get_board().reshape(1,3,3,2)))
-
+    import time
     for epoch in range(epochs):
         x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
-        print("Epoch")
-        print(x.shape)
-        raw = agent.predict(x)
-        for i in range(len(x)):
-            print("predictions", softmax(y_pol[i], raw[0][i]), raw[1][i])
+        #print("Epoch")
+        #print(x.shape)
+        #raw = agent.predict(x)
+        #for num in range(len(x)):
+        #    print("targets-predictions")
+        #    print(y_pol[num], y_val[num])
+        #    print(softmax(y_pol[num], raw[0][num]), raw[1][num])
         agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
+        #print("end epoch")
+        #agent.save_weights("Models/" + Config.name + "/" + str(epoch) + ".h5")
+        #agent.save_weights("Models/"+Config.name+"/"+str(epoch)+"_"+str(time.time())+".h5")
         print("end epoch")
         if (epoch % 10 == 0):
             agent.save_weights("Models/"+Config.name+"/"+str(epoch)+"_batch.h5")
     return agent
-
 
 def choose_best_legal_move(legal_moves, y_pred):
     best_move = np.argmax(y_pred)
@@ -131,5 +163,5 @@ def choose_best_legal_move(legal_moves, y_pred):
         y_pred[best_move] = 0
         return choose_best_legal_move(legal_moves, y_pred)
 
-if __name__ == '__main__':
-    train(Gamelogic.FourInARow(), Config, 128, 5)
+
+train(Gamelogic.FourInARow(), Config, 128, 5)

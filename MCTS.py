@@ -2,14 +2,15 @@ import math
 import time
 import random
 import numpy as np
+
 # from Othello import Gamelogic
 from TicTacToe import Gamelogic
 import loss
 import collections
 
 
-# OBS: when the game is over it the algorithm expects that it is none to move
 
+# OBS: when the game is over it the algorithm expects that it is none to move
 
 class MCTS:
     def __init__(self):
@@ -18,9 +19,11 @@ class MCTS:
         self.pos_move_dict = {}  # Possible actions for each state
         self.state_visits = {}  # total visits for each state
 
+
         # #######PARAMETERS#######
         self.c_puct = 2  # Used for exploration (larger=>less long term exploration)
         self.c_init = 3  # Used for exploration (larger=>more exploration)
+
 
         self.dirichlet_noise = True  # Add dirichlet noise to the prior probabilities of the root
         self.alpha = 0.9  # Dirichlet noise variable
@@ -43,6 +46,7 @@ class MCTS:
         self.time_4 = 0
 
         self.search_stack = []
+        self.return_vars = None
 
     def reset_search(self):
         self.search_dict = {}
@@ -52,6 +56,7 @@ class MCTS:
         self.tree_children = [0 for _ in range(61)]
 
         self.search_stack = []
+        self.return_vars = None
 
     # Setting the game the MCTS will be used on
     def set_game(self, game):
@@ -106,14 +111,13 @@ class MCTS:
     def search_series(self, number):
         for _ in range(number):
             self.search()
-
+    
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
         # Selection - selecting the path from
-        now = time.time()
         state, action = self._selection()
         self.search_stack.append((state, action))
-        self.time_1 += time.time() - now
+        
 
         # The search traversed an internal node
         if action is not None:
@@ -124,23 +128,21 @@ class MCTS:
             return None
 
         # Evaluation
-        now = time.time()
-        return self.game.get_board().reshape(self.NN_input_dim)
+        return self.game.get_board()
 
         
-    def backpropagate(result):
-        value, priors = self._evaluate(result)
+    def backpropagate(self, result):
         state, action = self.search_stack.pop()
         # Expansion
-        self._expansion(state, priors)
-        self.tree_children[len(self.game.history)] += 1
-        self.time_3 += time.time() - now
-        self.return_vars(value, [], False)
+        if not self.game.is_final():
+            value, priors = self._evaluate(result)
+            self._expansion(state, priors)
+            self.tree_children[len(self.game.history)] += 1
+            self.return_vars = (value, [], False)
 
         while len(self.search_stack):
             state, action = self.search_stack.pop()
             backp_value, outcome, finished = self.return_vars
-            now = time.time()
             # Negating the back-propagated value if it is the opponent to move
             to_move = self.game.get_turn()
             self.game.undo_move()
@@ -152,8 +154,7 @@ class MCTS:
 
             # Backward pass
             self._backward_pass(state, str(state) + '-' + str(action), backp_value)
-            self.time_2 += time.time() - now
-            self.return_vars(backp_value, outcome, finished)
+            self.return_vars = (backp_value, outcome, finished)
 
 
     # Selecting the path from the root node to the leaf node and returning the new state and the last action executed
@@ -207,6 +208,7 @@ class MCTS:
 
         #state = state.reshape(self.NN_input_dim)
         policy, value = result
+        
         policy = policy.flatten()
 
         legal_moves = np.array(self.game.get_legal_NN_output())

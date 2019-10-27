@@ -132,7 +132,7 @@ class GameRendering:
                 if len(self.game.history) > 0 and len(
                         self.game.get_moves()) > 1:  # Does not compute first, and last possible move very deeply
                     for searches in range(2):
-                        tree.search()
+                        tree.search_series(500)
                         if searches % 200 == 0:
                             """update weight on screen every 200 search"""
                             self.weights = tree.get_posterior_probabilities(self.game.get_state())
@@ -140,7 +140,8 @@ class GameRendering:
                             self.update_screen()
                             self.see_valuation()
                 else:
-                    tree.search_series(2)
+                    tree.search_series(1000)
+                print("Searched", tree.get_posterior_probabilities(self.game.get_state()))
                 predict = tree.get_most_searched_move(self.game.get_state())
                 #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
                 self.game.execute_move(predict)

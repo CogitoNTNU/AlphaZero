@@ -3,10 +3,10 @@ import ResNet
 import MCTS
 import Files
 
-# from Othello import Gamerendering
-# from Othello import Gamelogic
-from TicTacToe import Gamelogic
-from TicTacToe import Config
+from FourInARow import Gamelogic
+from FourInARow import Config
+# from TicTacToe import Gamelogic
+# from TicTacToe import Config
 #from FourInARow import Gamelogic
 #from FourInARow import Config
 from keras.optimizers import SGD
@@ -87,7 +87,7 @@ def generate_data(game, agent, config, num_sim=100, games=1):
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=2000, games_each_epoch=1,
+def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=200, games_each_epoch=10,
           batch_size=32, num_train_epochs=3):
     h, w, d = config.board_dims[1:]
     # agent, agent1 = NN2.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
@@ -116,7 +116,7 @@ def train(game, config, num_filters, num_res_blocks, num_sim=400, epochs=2000, g
         agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
         print("end epoch")
         if (epoch % 10 == 0):
-            agent.save_weights("Models/"+Config.name+"/"+str(epoch)+".h5")
+            agent.save_weights("Models/"+Config.name+"/"+str(epoch)+"_batch.h5")
     return agent
 
 
@@ -132,4 +132,4 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 if __name__ == '__main__':
-    train(Gamelogic.TicTacToe(), Config, 128, 5)
+    train(Gamelogic.FourInARow(), Config, 128, 5)

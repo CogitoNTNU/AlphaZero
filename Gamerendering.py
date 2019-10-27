@@ -124,9 +124,9 @@ class GameRendering:
                 """If machines turn, machine do move"""
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
                 if len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
-                    for searches in range(1000):
+                    for searches in range(125):
                         tree.search()
-                        if searches%250 == 0:
+                        if searches%25 == 0:
                             """update weight on screen every 200 search"""
                             self.weights = tree.get_posterior_probabilities()
                             self.update_screen()

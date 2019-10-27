@@ -18,7 +18,7 @@ agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
 
 """retrieve weights file"""
 game = Gamelogic.TicTacToe()
-agent.load_weights('Models/TicTacToe/21_1571765446.1245914.h5')
+agent.load_weights('Models/TicTacToe/3_1571816138.4248843.h5')
 
 """start game-loop"""
 rendering = GameRendering(game, agent, Config)

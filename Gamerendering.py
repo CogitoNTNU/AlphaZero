@@ -2,7 +2,11 @@ import pygame
 import sys
 from time import sleep
 import copy
-
+import pydot
+import heapq
+import os
+import random
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 #from MCTS import MCTS
 from Main import *
@@ -31,12 +35,12 @@ class GameRendering:
         self.line_th = 5
         self.height = self.game.board_dims[1]
         self.width = self.game.board_dims[2]
-#        self.image = pygame.image.load("nevraltnett.png")
-#        self.imagerect = self.image.get_size()
+        self.image = pygame.image.load("nevraltnett.png")
+        self.imagerect = self.image.get_size()
         self.black = (0, 0, 0)
         self.white = (255, 255, 255)
         self.piece_size = self.side_length//3
-        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th , max(self.side_length * self.height + self.line_th,0)])#+ self.imagerect[0],self.imagerect[1]
+        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0], max(self.side_length * self.height + self.line_th,self.imagerect[1])])#+ self.imagerect[0],self.imagerect[1]
         self.weights = [0]*len(self.game.get_moves())   #Set weight to empty array to represent all moves
         self.count = 0 #Switches sides of human and machine
         self.won = 0
@@ -115,11 +119,10 @@ class GameRendering:
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
                     for searches in range(1000):
                         tree.search()
-                        if searches%200 == 0:
+                        if (searches%300 == 0 and searches != 0):
                             """update weight on screen every 200 search"""
-                            self.weights = tree.get_posterior_probabilities()
-                            self.update_screen()
-                            self.see_valuation()
+                            self.NNvisual(tree, num_nodes=20)
+                    self.NNvisual(tree,num_nodes=20)
                 else:
                     tree.search_series(100)
                 predict = tree.get_most_searched_move(tree.root)
@@ -151,6 +154,7 @@ class GameRendering:
 
         """Background"""
         self.screen.fill(background_color)
+        self.screen.blit(self.image,(self.width * self.side_length + self.line_th,0))
         """Draw board lines
         pygame.draw.line(surface, color, start_pos, end_pos, width)"""
         for line in range(self.width + 1):
@@ -231,3 +235,44 @@ class GameRendering:
         self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
         sleep(0.2) # Delay for preventing multiple presses accidently
 
+    def build_graph(self, graph_root, tree_root, graph, heap):
+        heapq.heappush(heap,(100000 - tree_root.get_times_visited(),random.randint(1,10000000000), tree_root))
+        # graph.add_node(node)
+        for child in tree_root.children:
+            self.build_graph(None, child, graph, heap)
+        # if graph_root:
+        #     graph.add_edge(pydot.Edge(graph_root, node, label=str("a")))
+
+    def visualize_tree(self, root, num_nodes=20):
+        heap = []
+        graph = pydot.Dot(graph_type='graph')
+        self.build_graph(None, root, graph, heap)
+        for x in range(num_nodes):
+            #does not track visits, why?
+            top_heap = heapq.heappop(heap)
+            tree_node, node_visits = top_heap[2], top_heap[0]
+            node = pydot.Node(id(tree_node), style='filled',
+                              fillcolor="#aa88aa",
+                              label=str(- node_visits + 100000), shape="circle", fixedsize="shape")
+            graph.add_node(node)
+            if x != 0:
+                graph.add_edge(pydot.Edge(id(tree_node.parent), id(tree_node), label=str(tree_node.get_last_action())))
+        print(graph.to_string())
+        graph_string = graph.to_string()
+        graph_string = graph_string.replace("{",'{rankdir = LR;bgcolor="#00ff00";')  # roterer grafen
+        graph = pydot.graph_from_dot_data(graph_string)[0]
+        graph.write_png('graph.png')
+
+    def NNvisual(self, tree, num_nodes):
+        self.visualize_tree(tree.root, num_nodes)
+        self.image = pygame.image.load("graph.png")
+        self.imagerect = self.image.get_size()
+        self.image = pygame.transform.smoothscale(self.image,
+                                                  (min(720, self.imagerect[0]), min(720, self.imagerect[1])))
+        self.imagerect = self.image.get_size()
+        self.screen = pygame.display.set_mode(
+            [self.side_length * self.width + self.line_th + self.imagerect[0],
+             max(self.side_length * self.height + self.line_th, self.imagerect[1])])
+        self.weights = tree.get_posterior_probabilities()
+        self.update_screen()
+        self.see_valuation()

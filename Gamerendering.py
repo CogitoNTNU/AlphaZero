@@ -40,9 +40,10 @@ class GameRendering:
         self.black = (0, 0, 0)
         self.white = (255, 255, 255)
         self.piece_size = self.side_length//3
-        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0], max(self.side_length * self.height + self.line_th,self.imagerect[1])])#+ self.imagerect[0],self.imagerect[1]
+        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0], max(self.side_length * (self.height + 1) + self.line_th,self.imagerect[1])])#+ self.imagerect[0],self.imagerect[1]
         self.weights = [0]*len(self.game.get_moves())   #Set weight to empty array to represent all moves
         self.count = 0 #Switches sides of human and machine
+        self.primary_line = []
         self.won = 0
         self.tied = 0
         self.lost = 0
@@ -51,9 +52,11 @@ class GameRendering:
         self.tictactoe = False
         self.fourinarow = False
         if self.game.name == "TicTacToe":
-            self.tictactoe=True 
+            self.tictactoe=True
+            self.background_color = (0, 109, 50)
         elif self.game.name == "FourInARow":
             self.fourinarow = True
+            self.background_color = (0, 100, 150)
         
         self.update_screen()
         
@@ -117,11 +120,29 @@ class GameRendering:
                 """If machines turn, machine do move"""
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
-                    for searches in range(1000):
+                    for searches in range(500):
                         tree.search()
-                        if (searches%300 == 0 and searches != 0):
+                        if (searches%100 == 0 and searches != 0):
                             """update weight on screen every 200 search"""
                             self.NNvisual(tree, num_nodes=20)
+                            """Build most searched line, and show it on screen"""
+                            self.primary_line = []
+                            tree_copy = copy.copy(tree)
+                            best_action = tree_copy.get_most_searched_move(tree_copy.root)
+                            tree_copy.game.execute_move(best_action)
+                            tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
+                            self.primary_line.append(best_action)
+                            c = 1
+                            while best_action:
+                                best_action = tree_copy.get_most_searched_move(tree_copy.root)
+                                tree_copy.game.execute_move(best_action)
+                                tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
+                                self.primary_line.append(best_action)
+                                c += 1
+                            for move in range(c):
+                                tree_copy.game.undo_move()
+
+                            self.show_gamelines(self.primary_line)
                     self.NNvisual(tree,num_nodes=20)
                 else:
                     tree.search_series(100)
@@ -129,7 +150,9 @@ class GameRendering:
 #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
                 self.game.execute_move(predict)
                 self.update_screen()
+                self.show_gamelines(self.primary_line)
                 self.see_valuation()
+
 
 
     def see_valuation(self):
@@ -164,10 +187,11 @@ class GameRendering:
                              [line * self.side_length + 2, self.side_length * self.height + self.line_th-2],
                              self.line_th)
             """Horizontal lines"""
-            pygame.draw.line(self.screen, line_color,
-                             [0, line * self.side_length + 2],
-                             [self.side_length * self.width + self.line_th-2, line * self.side_length + 2],
-                             self.line_th)
+            if line <= self.height:
+                pygame.draw.line(self.screen, line_color,
+                                [0, line * self.side_length + 2],
+                                [self.side_length * self.width + self.line_th-2, line * self.side_length + 2],
+                                self.line_th)
             
         """Render pieces"""
         board = self.game.board
@@ -195,30 +219,35 @@ class GameRendering:
                                 (self.Config.move_to_number(move)) % self.width),
                     (self.side_length + self.line_th) // 2 + self.side_length * (
                                 (self.Config.move_to_number(move)) // self.width)], self.piece_size)
+            myfont = pygame.font.SysFont(self.default_font, self.piece_size)
+            action = myfont.render(str(move), False, background_color)
+            self.screen.blit(action, ((self.side_length + self.line_th) // 2 + self.side_length * (
+                    (self.Config.move_to_number(move)) % self.width) - action.get_width() // 2,
+                                      (self.side_length + self.line_th) // 2 + self.side_length * (
+                                              (self.Config.move_to_number(
+                                                  move)) // self.width) - action.get_height() // 2))
         pygame.display.flip()
 
 
     
     def _render_tictactoe(self):
         """Update screen for Tic tac toe"""
-        background_color = (0, 109, 50)
         line_color = self.black
         p1_color = self.white
         p2_color = self.black
         possible_color = (255, 0, 0)
-        self._render(background_color, line_color, p1_color, p2_color, possible_color)
+        self._render(self.background_color, line_color, p1_color, p2_color, possible_color)
         
 
 
     def _render_fourinarow(self):
         """Update screen for Four in a Row"""
-        background_color = (0, 100, 150)
         line_color = self.black
         p1_color = (255, 0, 0)
         p2_color = (255, 255, 0)
         possible_color = (0, 255, 0)
-        self._render(background_color, line_color, p1_color, p2_color, possible_color)
-        
+        self._render(self.background_color, line_color, p1_color, p2_color, possible_color)
+
     def update_screen(self):
         """updates the screen with the right graphics"""
         if self.tictactoe:
@@ -248,7 +277,8 @@ class GameRendering:
         graph = pydot.Dot(graph_type='graph')
         self.build_graph(None, root, graph, heap)
         for x in range(num_nodes):
-            #does not track visits, why?
+            if heap == []:
+                break
             top_heap = heapq.heappop(heap)
             tree_node, node_visits = top_heap[2], top_heap[0]
             node = pydot.Node(id(tree_node), style='filled',
@@ -257,9 +287,9 @@ class GameRendering:
             graph.add_node(node)
             if x != 0:
                 graph.add_edge(pydot.Edge(id(tree_node.parent), id(tree_node), label=str(tree_node.get_last_action())))
-        print(graph.to_string())
         graph_string = graph.to_string()
-        graph_string = graph_string.replace("{",'{rankdir = LR;bgcolor="#00ff00";')  # roterer grafen
+        graph_string = graph_string.replace("{",'{rankdir = LR;bgcolor="#%02x%02x%02x";' % self.background_color)  # roterer grafen
+        print(graph_string)
         graph = pydot.graph_from_dot_data(graph_string)[0]
         graph.write_png('graph.png')
 
@@ -272,7 +302,13 @@ class GameRendering:
         self.imagerect = self.image.get_size()
         self.screen = pygame.display.set_mode(
             [self.side_length * self.width + self.line_th + self.imagerect[0],
-             max(self.side_length * self.height + self.line_th, self.imagerect[1])])
+             max(self.side_length * (self.height + 1) + self.line_th, self.imagerect[1])])
         self.weights = tree.get_posterior_probabilities()
         self.update_screen()
         self.see_valuation()
+
+    def show_gamelines(self, pline):
+        myfont = pygame.font.SysFont(self.default_font, 30)
+        line = myfont.render('Projected line:' + str(pline), False, self.white)
+        self.screen.blit(line, (0, (self.side_length * self.height) + self.line_th))
+        pygame.display.flip()

@@ -1,6 +1,24 @@
 # AlphaZero
 _Coming soon_
 
+## Installation
+Clone the repository
+```
+git clone https://github.com/CogitoNTNU/AlphaZero.git
+```
+Navigate into the project folder
+```
+cd AlphaZero
+```
+Install the dependencies
+```
+pip3 install -r requirements.txt
+```
+If everything went well, you can run the code
+```
+python3 Main.py
+```
+
 ## Motivation
 _Coming soon_
 

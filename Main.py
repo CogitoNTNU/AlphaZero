@@ -4,22 +4,24 @@ import MCTS
 import Files
 import Multiprocessing
 
+import time
+
 # from Othello import Gamerendering
 # from Othello import Gamelogic
-#from TicTacToe import Gamelogic
-#from TicTacToe import Config
+# from TicTacToe import Gamelogic
+# from TicTacToe import Config
 from FourInARow import Gamelogic
 from FourInARow import Config
 
-from keras.optimizers import SGD
-from loss import softmax_cross_entropy_with_logits, softmax
+# from keras.optimizers import SGD
+# from loss import softmax_cross_entropy_with_logits, softmax
 
 import numpy as np
 
 
 # Creating and returning a tree with properties specified from the input
 def get_tree(config, agent, game, dirichlet_noise=True):
-    tree = MCTS.MCTS()#(game, game.get_board(), None, config)
+    tree = MCTS.MCTS()  # (game, game.get_board(), None, config)
     tree.dirichlet_noise = dirichlet_noise
     tree.NN_input_dim = config.board_dims
     tree.policy_output_dim = config.policy_output_dim
@@ -29,6 +31,7 @@ def get_tree(config, agent, game, dirichlet_noise=True):
     tree.set_evaluation(agent)
     tree.set_game(game)
     return tree
+
 
 def get_game_object():
     return Gamelogic.FourInARow()
@@ -63,7 +66,7 @@ class GameGenerator:
 
     def reset_tree(self):
         self.tree.reset_search()
-        #self.tree.root.board_state = self.game.get_board()
+        # self.tree.root.board_state = self.game.get_board()
 
     def get_results(self):
         game_outcome = self.game.get_outcome()
@@ -72,12 +75,29 @@ class GameGenerator:
 
 
 # Generating data by self-play
-#def generate_data(game, agent, config, num_sim=1, games=1, num_search=30):
-def generate_data(result_queue, game, agent, config, num_sim=1, games=1, num_search=130):
-    #tree = get_tree(config, agent, game)
-    print("starter funksjon")
-    game_generators = [GameGenerator(config, agent) for _ in range(num_sim)]
-    print("lager generatorene")
+def generate_data(result_queue, game, res_dict, config1, num_sim, games=1, num_search=130):
+    import tensorflow as tf
+    from keras.backend.tensorflow_backend import set_session
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
+    # config.log_device_placement = True  # to log device placement (on which device the operation ran)
+    # # (nothing gets printed in Jupyter, only if you run it standalone)
+    # sess = tf.Session(config=config)
+    # set_session(sess)  # set this TensorFlow session as the default session for Keras
+    # Assume that you have 12GB of GPU memory and want to allocate ~4GB:
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.08)
+
+    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+    set_session(sess)
+    # game=inp[1]
+    # res_dict=inp[2]
+    # config=inp[3]
+    from keras.optimizers import SGD
+    from loss import softmax_cross_entropy_with_logits, softmax
+    agent = ResNet.ResNet.build(6, 7, 2, 128, config1.policy_output_dim, num_res_blocks=7)
+    # print("starter funksjon")
+    game_generators = [GameGenerator(config1, agent) for _ in range(num_sim)]
+    # print("lager generatorene")
     x = []
     y_policy = []
     y_value = []
@@ -93,15 +113,19 @@ def generate_data(result_queue, game, agent, config, num_sim=1, games=1, num_sea
                 if res[i] is not None:
                     to_predict.append(res[i])
                     to_predict_generators.append(game_generators[i])
-                else: 
+                else:
                     no_predict_generators.append(game_generators[i])
             if len(to_predict):
                 batch = np.array(to_predict)
-                print("skal prediktere")
+                # print("skal prediktere")
                 results = agent.predict(batch)
-                print("ferdig")
-            res = [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in range(len(to_predict_generators))] + [no_predict_generators[i].run_part2(None) for i in range(len(no_predict_generators))]
-            print("ett søk")
+                # print("Results---", results)
+                # print("ferdig")
+            res = [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in
+                   range(len(to_predict_generators))] + [no_predict_generators[i].run_part2(None) for i in
+                                                         range(len(no_predict_generators))]
+        print("LEN", len(game_generators))
+            # print("ett søk")
         res = [game_generator.execute_best_move() for game_generator in game_generators]
         game_generators = []
         finished_games = []
@@ -115,12 +139,14 @@ def generate_data(result_queue, game, agent, config, num_sim=1, games=1, num_sea
             x.append(history)
             y_policy.append(policy_targets)
             y_value.append(value_targets)
-
-        #with open("test.txt", "a") as f:
-        #    f.write("antall spill igjen: " + str(len(game_generators)) + "\n")
-    return np.concatenate(x, axis=0), np.concatenate(y_policy, axis=0), np.concatenate(y_value, axis=0)
-    #result_queue.put([np.array(x), np.array(y_policy), np.array(y_value)])
-    #return np.array(x), np.array(y_policy), np.array(y_value)
+    # print("Done")
+    # return np.concatenate(x, axis=0), np.concatenate(y_policy, axis=0), np.concatenate(y_value, axis=0)
+    # result_queue.put([np.array(x), np.array(y_policy), np.array(y_value)], block=False)
+    # print("finished")
+    res_dict[str(result_queue)]=[np.array(x), np.array(y_policy), np.array(y_value)]
+    # exit([np.array(x), np.array(y_policy), np.array(y_value)])
+    # exit("now done")
+    # return np.array(x), np.array(y_policy), np.array(y_value)
 
 
 # # Generating data by self-play
@@ -173,47 +199,28 @@ def generate_data(result_queue, game, agent, config, num_sim=1, games=1, num_sea
 def train(game, config, num_filters, num_res_blocks, num_sim=10, epochs=1000000, games_each_epoch=10,
           batch_size=32, num_train_epochs=10):
     h, w, d = config.board_dims[1:]
-    agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
-    agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.0005, momentum=0.9))
-    #agent.summary()
-
-    # game.__init__()
-    # game.execute_move(0)
-    # game.execute_move(3)
-    # game.execute_move(1)
-    # game.execute_move(4)
-    # game.execute_move(6)
-    # game.execute_move(7)
-
-    # print(agent.predict(game.get_board().reshape(1,3,3,2)))
-#    import time
-#    for epoch in range(epochs):
-#        x, y_pol, y_val = generate_data(game, agent, config, num_sim=num_sim, games=games_each_epoch)
-        #print("Epoch")
-        #print(x.shape)
-        #raw = agent.predict(x)
-        #for num in range(len(x)):
-        #    print("targets-predictions")
-        #    print(y_pol[num], y_val[num])
-        #    print(softmax(y_pol[num], raw[0][num]), raw[1][num])
+    # agent.summary()
 
     for epoch in range(epochs):
-        x, y_pol, y_val=Multiprocessing.multiprocess_funcion(8, game, agent, Config)
-        #x, y_pol, y_val = generate_data(None, game, agent, config, num_sim=num_sim, games=games_each_epoch)
+        for processes in [6, 8]:
+            for games_pr_process in [20, 50, 100, 200]:
+                now=time.time()
+                Multiprocessing.multiprocess_function(processes, game, None, Config, games=games_pr_process)
+                # x, y_pol, y_val = Multiprocessing.multiprocess_function(4, game, None, Config)
+                # x, y_pol, y_val = generate_data(None, game, agent, config, num_sim=num_sim, games=games_each_epoch)
+                print(processes, games_pr_process, "Time_taken", time.time()-now, "pr game", (time.time()-now)/(processes*games_pr_process))
+        from keras.optimizers import SGD
+        from loss import softmax_cross_entropy_with_logits, softmax
+        agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
+        agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
+                      optimizer=SGD(lr=0.0005, momentum=0.9))
         print("Epoch")
-        #print(x.shape)
-        #raw = agent.predict(x)
-        #for i in range(len(x)):
-        #    print("predictions", softmax(y_pol[i], raw[0][i]), raw[1][i])
         agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
-        #print("end epoch")
-        #agent.save_weights("Models/" + Config.name + "/" + str(epoch) + ".h5")
-        #agent.save_weights("Models/"+Config.name+"/"+str(epoch)+"_"+str(time.time())+".h5")
         print("end epoch")
         if (epoch % 10 == 0):
             agent.save_weights("Models/" + Config.name + "/" + str(epoch) + "_batch.h5")
     return agent
+
 
 def choose_best_legal_move(legal_moves, y_pred):
     best_move = np.argmax(y_pred)
@@ -228,4 +235,4 @@ def choose_best_legal_move(legal_moves, y_pred):
 
 
 if __name__ == '__main__':
-    train(Gamelogic.FourInARow(), Config, 128, 5)
+    train(Gamelogic.FourInARow(), Config, 128, 0)

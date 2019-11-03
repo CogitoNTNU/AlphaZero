@@ -48,6 +48,10 @@ class MCTS:
         self.search_stack = []
         self.return_vars = None
 
+    def set_seed(self, num):
+        self.seed=num+np.random.randint(0, high=100000)
+        np.random.seed(self.seed)
+
     def reset_search(self):
         self.search_dict = {}
         self.pos_move_dict = {}

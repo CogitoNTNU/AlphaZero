@@ -11,7 +11,7 @@ def multiprocess_function(num_processes, game, agent, config, num_sim=20, games=
 
 
     workers = [Process(target=Main.generate_data,
-                       args=(x, Main.Gamelogic.FourInARow(), res_dict, config, games))
+                       args=(x, Main.Gamelogic.FourInARow(), res_dict, config, games, x))
                for x in range(num_processes)]
     for worker in workers: worker.start()
     # print("start")

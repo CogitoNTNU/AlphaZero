@@ -20,7 +20,7 @@ import numpy as np
 
 
 # Creating and returning a tree with properties specified from the input
-def get_tree(config, agent, game, dirichlet_noise=True):
+def get_tree(config, agent, game, dirichlet_noise=True, seed=0):
     tree = MCTS.MCTS()  # (game, game.get_board(), None, config)
     tree.dirichlet_noise = dirichlet_noise
     tree.NN_input_dim = config.board_dims
@@ -30,6 +30,8 @@ def get_tree(config, agent, game, dirichlet_noise=True):
     tree.number_to_move_func = config.number_to_move
     tree.set_evaluation(agent)
     tree.set_game(game)
+    print("setting seed", seed)
+    tree.set_seed(seed)
     return tree
 
 
@@ -38,9 +40,9 @@ def get_game_object():
 
 
 class GameGenerator:
-    def __init__(self, config, agent):
+    def __init__(self, config, agent, seed=0):
         self.game = get_game_object()
-        self.tree = get_tree(config, agent, self.game)
+        self.tree = get_tree(config, agent, self.game, seed=seed)
         self.history = []
         self.policy_targets = []
         self.player_moved_list = []
@@ -56,7 +58,8 @@ class GameGenerator:
     def execute_best_move(self):
         state = self.game.get_state()
         temp_move = self.tree.get_temperature_move(state)
-
+        print(self.tree.get_prior_probabilities(state))
+        print("temp move", temp_move, self.tree.seed)
         self.history.append(temp_move)
         self.policy_targets.append(np.array(self.tree.get_posterior_probabilities(state)))
         self.player_moved_list.append(self.game.get_turn())
@@ -71,11 +74,12 @@ class GameGenerator:
     def get_results(self):
         game_outcome = self.game.get_outcome()
         value_targets = [game_outcome[x] for x in self.player_moved_list]
-        return np.array(self.positions), np.array(self.policy_targets), np.array(value_targets)
+        return np.array(self.history), np.array(self.positions), np.array(self.policy_targets), np.array(
+            value_targets)
 
 
 # Generating data by self-play
-def generate_data(result_queue, game, res_dict, config1, num_sim, games=1, num_search=130):
+def generate_data(result_queue, game, res_dict, config1, num_sim, seed, games=1, num_search=130):
     import tensorflow as tf
     from keras.backend.tensorflow_backend import set_session
     # config = tf.ConfigProto()
@@ -95,9 +99,9 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, games=1, num_s
     from keras.optimizers import SGD
     from loss import softmax_cross_entropy_with_logits, softmax
     agent = ResNet.ResNet.build(6, 7, 2, 128, config1.policy_output_dim, num_res_blocks=7)
-    # print("starter funksjon")
-    game_generators = [GameGenerator(config1, agent) for _ in range(num_sim)]
-    # print("lager generatorene")
+
+    game_generators = [GameGenerator(config1, agent, seed=seed) for _ in range(num_sim)]
+
     x = []
     y_policy = []
     y_value = []
@@ -117,15 +121,13 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, games=1, num_s
                     no_predict_generators.append(game_generators[i])
             if len(to_predict):
                 batch = np.array(to_predict)
-                # print("skal prediktere")
                 results = agent.predict(batch)
-                # print("Results---", results)
-                # print("ferdig")
-            res = [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in
-                   range(len(to_predict_generators))] + [no_predict_generators[i].run_part2(None) for i in
-                                                         range(len(no_predict_generators))]
+            [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in
+             range(len(to_predict_generators))]
+            [no_predict_generators[i].run_part2(None) for i in range(len(no_predict_generators))]
+
         print("LEN", len(game_generators))
-            # print("ett søk")
+
         res = [game_generator.execute_best_move() for game_generator in game_generators]
         game_generators = []
         finished_games = []
@@ -135,18 +137,14 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, games=1, num_s
                 continue
             game_generators.append(game_generator)
         game_results = [game_generator.get_results() for game_generator in finished_games]
-        for history, policy_targets, value_targets in game_results:
+        for moves, history, policy_targets, value_targets in game_results:
+            print("moves", moves)
             x.append(history)
             y_policy.append(policy_targets)
             y_value.append(value_targets)
-    # print("Done")
-    # return np.concatenate(x, axis=0), np.concatenate(y_policy, axis=0), np.concatenate(y_value, axis=0)
-    # result_queue.put([np.array(x), np.array(y_policy), np.array(y_value)], block=False)
-    # print("finished")
-    res_dict[str(result_queue)]=[np.array(x), np.array(y_policy), np.array(y_value)]
-    # exit([np.array(x), np.array(y_policy), np.array(y_value)])
-    # exit("now done")
-    # return np.array(x), np.array(y_policy), np.array(y_value)
+
+    print("finished", )
+    res_dict[str(result_queue)] = [np.array(x), np.array(y_policy), np.array(y_value)]
 
 
 # # Generating data by self-play
@@ -202,13 +200,14 @@ def train(game, config, num_filters, num_res_blocks, num_sim=10, epochs=1000000,
     # agent.summary()
 
     for epoch in range(epochs):
-        for processes in [6, 8]:
-            for games_pr_process in [20, 50, 100, 200]:
-                now=time.time()
+        for processes in [2]:
+            for games_pr_process in [2, 4]:
+                now = time.time()
                 Multiprocessing.multiprocess_function(processes, game, None, Config, games=games_pr_process)
                 # x, y_pol, y_val = Multiprocessing.multiprocess_function(4, game, None, Config)
                 # x, y_pol, y_val = generate_data(None, game, agent, config, num_sim=num_sim, games=games_each_epoch)
-                print(processes, games_pr_process, "Time_taken", time.time()-now, "pr game", (time.time()-now)/(processes*games_pr_process))
+                print(processes, games_pr_process, "Time_taken", time.time() - now, "pr game",
+                      (time.time() - now) / (processes * games_pr_process))
         from keras.optimizers import SGD
         from loss import softmax_cross_entropy_with_logits, softmax
         agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)

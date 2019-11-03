@@ -36,7 +36,7 @@ class GameRendering:
         self.height = self.game.board_dims[1]
         self.width = self.game.board_dims[2]
         self.image = pygame.image.load("nevraltnett.png")
-        self.imagerect = self.image.get_size()
+        self.imagerect = (0, 0)
         self.black = (0, 0, 0)
         self.white = (255, 255, 255)
         self.piece_size = self.side_length//3
@@ -57,7 +57,22 @@ class GameRendering:
         elif self.game.name == "FourInARow":
             self.fourinarow = True
             self.background_color = (0, 100, 150)
-        
+        """check if graphviz is installed and in path"""
+        try:
+            self.test_graph="digraph g{rankdir=LR;testing -> testing -> tested}"
+            self.test_graph = pydot.graph_from_dot_data(self.test_graph)[0]
+            self.test_graph.write_png('graph.png')
+        except FileNotFoundError:
+            print("Error:Graphviz is not installed or not on path, skipping visualization")
+            self.draw_graph=False
+        except:
+            print("Error: Unknown error with graph visualization, skipping")
+            self.draw_graph=False
+        else:
+            self.draw_graph=True
+
+
+
         self.update_screen()
         
         
@@ -125,24 +140,7 @@ class GameRendering:
                         if (searches%100 == 0 and searches != 0):
                             """update weight on screen every 200 search"""
                             self.NNvisual(tree, num_nodes=20)
-                            """Build most searched line, and show it on screen"""
-                            self.primary_line = []
-                            tree_copy = copy.copy(tree)
-                            best_action = tree_copy.get_most_searched_move(tree_copy.root)
-                            tree_copy.game.execute_move(best_action)
-                            tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
-                            self.primary_line.append(best_action)
-                            c = 1
-                            while best_action:
-                                best_action = tree_copy.get_most_searched_move(tree_copy.root)
-                                tree_copy.game.execute_move(best_action)
-                                tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
-                                self.primary_line.append(best_action)
-                                c += 1
-                            for move in range(c):
-                                tree_copy.game.undo_move()
 
-                            self.show_gamelines(self.primary_line)
                     self.NNvisual(tree,num_nodes=20)
                 else:
                     tree.search_series(100)
@@ -162,7 +160,7 @@ class GameRendering:
             possible_moves = self.game.get_moves()
             for move in possible_moves:
                 self.label = self.font_renderer.render(str(round(self.weights[move],4)),1,self.font_color)
-                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,(self.side_length + self.line_th) // 2 + self.side_length * ((8-self.Config.move_to_number(move))//self.width) - self.label.get_height() ])
+                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,self.side_length * ((8-self.Config.move_to_number(move))//self.width) + self.label.get_height() - self.line_th ])
                 pygame.display.flip()
         elif self.fourinarow:
             possible_moves = self.game.get_moves()
@@ -213,7 +211,7 @@ class GameRendering:
         for move in possible_moves:
             new_possible_color = (possible_color[0], possible_color[1], 200*self.weights[move])
             if self.tictactoe:
-                move = (self.width * self.height) - (move)//self.width * self.width + (move) % self.width-self.width
+                move = self.y_flip(move)
             pygame.draw.circle(self.screen, new_possible_color, [
                     (self.side_length + self.line_th) // 2 + self.side_length * (
                                 (self.Config.move_to_number(move)) % self.width),
@@ -286,29 +284,64 @@ class GameRendering:
                               label=str(- node_visits + 100000), shape="circle", fixedsize="shape")
             graph.add_node(node)
             if x != 0:
-                graph.add_edge(pydot.Edge(id(tree_node.parent), id(tree_node), label=str(tree_node.get_last_action())))
+                move = tree_node.get_last_action()
+                if self.tictactoe:
+                    move = self.y_flip(move)
+                graph.add_edge(pydot.Edge(id(tree_node.parent), id(tree_node), label=str(move)))
+        """roterer grafen, setter bakgrunn"""
         graph_string = graph.to_string()
-        graph_string = graph_string.replace("{",'{rankdir = LR;bgcolor="#%02x%02x%02x";' % self.background_color)  # roterer grafen
-        print(graph_string)
+        graph_string = graph_string.replace("{",'{rankdir = LR;bgcolor="#%02x%02x%02x";' % self.background_color)
         graph = pydot.graph_from_dot_data(graph_string)[0]
         graph.write_png('graph.png')
 
     def NNvisual(self, tree, num_nodes):
-        self.visualize_tree(tree.root, num_nodes)
-        self.image = pygame.image.load("graph.png")
-        self.imagerect = self.image.get_size()
-        self.image = pygame.transform.smoothscale(self.image,
-                                                  (min(720, self.imagerect[0]), min(720, self.imagerect[1])))
-        self.imagerect = self.image.get_size()
-        self.screen = pygame.display.set_mode(
-            [self.side_length * self.width + self.line_th + self.imagerect[0],
-             max(self.side_length * (self.height + 1) + self.line_th, self.imagerect[1])])
+        '''visualize tree'''
+        if self.draw_graph:
+            self.visualize_tree(tree.root, num_nodes)
+            self.image = pygame.image.load("graph.png")
+            self.imagerect = self.image.get_size()
+            self.image = pygame.transform.smoothscale(self.image,
+                                                      (min(720, self.imagerect[0]), min(720, self.imagerect[1])))
+            self.imagerect = self.image.get_size()
+            self.screen = pygame.display.set_mode(
+                [self.side_length * self.width + self.line_th + self.imagerect[0],
+                 max(self.side_length * (self.height + 1) + self.line_th, self.imagerect[1])])
         self.weights = tree.get_posterior_probabilities()
+        """Build most searched line, and show it on screen"""
+        self.primary_line = []
+        tree_copy = copy.copy(tree)
+        best_action = tree_copy.get_most_searched_move(tree_copy.root)
+        tree_copy.game.execute_move(best_action)
+        tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
+        if self.tictactoe:
+            best_action_number = self.y_flip(best_action)
+        else:
+            best_action_number = best_action
+        self.primary_line.append(best_action_number)
+        c = 1
+        while best_action:
+            best_action = tree_copy.get_most_searched_move(tree_copy.root)
+            tree_copy.game.execute_move(best_action)
+            tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
+            if self.tictactoe:
+                best_action_number = self.y_flip(best_action)
+            else:
+                best_action_number = best_action
+            self.primary_line.append(best_action_number)
+            c += 1
+        for move in range(c):
+            tree_copy.game.undo_move()
+        '''update screen'''
         self.update_screen()
         self.see_valuation()
+        self.show_gamelines(self.primary_line)
 
     def show_gamelines(self, pline):
         myfont = pygame.font.SysFont(self.default_font, 30)
         line = myfont.render('Projected line:' + str(pline), False, self.white)
         self.screen.blit(line, (0, (self.side_length * self.height) + self.line_th))
         pygame.display.flip()
+
+    def y_flip(self, move):
+        #for use with TicTacToe
+        return (self.width * self.height) - (move) // self.width * self.width + (move) % self.width - self.width

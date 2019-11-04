@@ -309,28 +309,13 @@ class GameRendering:
         self.weights = tree.get_posterior_probabilities()
         """Build most searched line, and show it on screen"""
         self.primary_line = []
-        tree_copy = copy.copy(tree)
-        best_action = tree_copy.get_most_searched_move(tree_copy.root)
-        tree_copy.game.execute_move(best_action)
-        tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
-        if self.tictactoe:
-            best_action_number = self.y_flip(best_action)
-        else:
-            best_action_number = best_action
-        self.primary_line.append(best_action_number)
-        c = 1
-        while best_action:
-            best_action = tree_copy.get_most_searched_move(tree_copy.root)
-            tree_copy.game.execute_move(best_action)
-            tree_copy.root = tree_copy.find_node_given_state(tree_copy.game.get_board())
+        best_action = tree.get_most_searched_child_node(tree.root)
+        while best_action != None:
             if self.tictactoe:
-                best_action_number = self.y_flip(best_action)
+                self.primary_line.append(self.y_flip(best_action.last_action))
             else:
-                best_action_number = best_action
-            self.primary_line.append(best_action_number)
-            c += 1
-        for move in range(c):
-            tree_copy.game.undo_move()
+                self.primary_line.append(best_action.last_action)
+            best_action =tree.get_most_searched_child_node(best_action)
         '''update screen'''
         self.update_screen()
         self.see_valuation()

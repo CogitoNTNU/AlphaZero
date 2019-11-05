@@ -204,37 +204,7 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, seed, games=1,
 
 
 # Training AlphaZero by generating data from self-play and fitting the network
-def train(game, config, num_filters, num_res_blocks, num_sim=10, epochs=1000000, games_each_epoch=10,
-          batch_size=32, num_train_epochs=10):
-    h, w, d = config.board_dims[1:]
-    # agent.summary()
 
-    for epoch in range(epochs):
-        # for processes in [2]:
-        #     for games_pr_process in [2]:
-        #         now = time.time()
-        #         x, Y_pol, y_val=Multiprocessing.multiprocess_function(processes, game, None, Config, games=games_pr_process)
-        #         # x, y_pol, y_val = Multiprocessing.multiprocess_function(4, game, None, Config)
-        #         # x, y_pol, y_val = generate_data(None, game, agent, config, num_sim=num_sim, games=games_each_epoch)
-        #         print(processes, games_pr_process, "Time_taken", time.time() - now, "pr game",
-        #               (time.time() - now) / (processes * games_pr_process))
-        x, y_pol, y_val=Multiprocessing.multiprocess_function(2, game, None, Config, games=2)
-        from keras.optimizers import SGD
-        from loss import softmax_cross_entropy_with_logits, softmax
-        # agent = ResNet.ResNet.build(h, w, d, num_filters, config.policy_output_dim, num_res_blocks=num_res_blocks)
-        # agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-        #               optimizer=SGD(lr=0.0005, momentum=0.9))
-        # print("Epoch")
-        # # print("x", x, x.shape)
-        # # print("y_pol", y_pol, y_val.shape)
-        # # print("y_val", y_val, y_val.shape)
-        # agent.fit(x=x, y=[y_pol, y_val], batch_size=min(batch_size, len(x)), epochs=num_train_epochs, callbacks=[])
-        # print("end epoch")
-        # if (epoch % 10 == 0):
-        #     agent.save_weights("Models/" + Config.name + "/" + str(epoch) + "_batch.h5")
-        print("_____________--------------_____________")
-        time.sleep(10)
-    return agent
 
 
 def choose_best_legal_move(legal_moves, y_pred):
@@ -249,5 +219,3 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-if __name__ == '__main__':
-    train(Gamelogic.FourInARow(), Config, 128, 0)

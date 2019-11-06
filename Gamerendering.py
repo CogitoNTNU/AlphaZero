@@ -12,7 +12,7 @@ from Main import *
 class GameRendering:
 
 
-    def __init__(self, game, agent, Config):
+    def __init__(self, game, agent, Config, numSearch):
         """Initialize the pygame"""
         pygame.init()
         pygame.font.init()
@@ -113,7 +113,7 @@ class GameRendering:
                 """If machines turn, machine do move"""
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
-                    for searches in range(1000):
+                    for searches in range(numSearch):
                         tree.search()
                         if searches%200 == 0:
                             """update weight on screen every 200 search"""
@@ -121,7 +121,7 @@ class GameRendering:
                             self.update_screen()
                             self.see_valuation()
                 else:
-                    tree.search_series(100)
+                    tree.search_series(numSearch)
                 predict = tree.get_most_searched_move(tree.root)
 #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
                 self.game.execute_move(predict)

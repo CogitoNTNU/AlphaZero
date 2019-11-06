@@ -1,13 +1,31 @@
 # Importing files from this project
 import ResNet
 import MCTS
+import argparse
 import Files
-
-from TicTacToe import Gamelogic
-from TicTacToe import Config
-#from FourInARow import Gamelogic
-#from FourInARow import Config
 from keras.optimizers import SGD
+
+
+# import Config and Gamelogic, from the game you want to train/play
+
+parser = argparse.ArgumentParser(description='Command line for AZ!')
+parser.add_argument("--game", default= "TicTacToe",
+                    choices= ["TicTacToe", "FourInARow"], required= False, help= "Choose one of the games from the list")
+parser.add_argument("--numSearch", type = int,  default = 100, help = "This is number of searches preformed by MCTS")
+
+args = parser.parse_args()
+typeOfGame = args.game
+
+if typeOfGame == "TicTacToe":
+    print("Skal spille TicTacToe")
+    from TicTacToe import Config
+    from TicTacToe import Gamelogic
+elif typeOfGame == "FourInARow":
+    print("Skal spille FourInARow")
+    from FourInARow import Config
+    from FourInARow import Gamelogic
+
+
 from loss import softmax_cross_entropy_with_logits, softmax
 
 
@@ -42,6 +60,10 @@ def generate_data(game, agent, config, num_sim=100, games=1):
             temp_move = tree.get_temperature_move(tree.root)
             history.append(temp_move)
             policy_targets.append(np.array(tree.get_posterior_probabilities()))
+            if typeOfGame == "FourInARow":
+                (tree.get_prior_probabilities(game.get_board().reshape(1, 6, 7, 2)))
+            if typeOfGame == "TicTacToe":
+                (tree.get_prior_probabilities(game.get_board().reshape(1,3,3,2)))
             player_moved_list.append(game.get_turn())
             positions.append(np.array(game.get_board()))
 
@@ -105,4 +127,8 @@ def choose_best_legal_move(legal_moves, y_pred):
         return choose_best_legal_move(legal_moves, y_pred)
 
 
-#train(Gamelogic.TicTacToe(), Config, 128, 5)
+if __name__ == '__main__':
+    if typeOfGame == "FourInARow":
+        train(Gamelogic.FourInARow(), Config, 128, 7)
+    elif typeOfGame == "TicTacToe":
+        train(Gamelogic.TicTacToe(), Config, 128, 4)

@@ -16,7 +16,7 @@ from Main import *
 class GameRendering:
 
 
-    def __init__(self, game, agent, Config):
+    def __init__(self, game, agent, Config, numSearch):
         """Initialize the pygame"""
         pygame.init()
         pygame.font.init()
@@ -82,7 +82,8 @@ class GameRendering:
             if self.game.is_final():
                 """Show death screen"""
                 self.screen.fill(self.black)
-                myfont = pygame.font.SysFont(self.default_font, 50)
+                font_size = max((self.side_length*self.width + self.line_th) // 35 , 20)
+                myfont = pygame.font.SysFont(self.default_font, 2*font_size)
                 """Who won"""
                 if self.game.get_outcome()[0] == 0:
                     winner = myfont.render('Tied', False, (255, 255, 255))
@@ -93,18 +94,18 @@ class GameRendering:
                 else:
                     winner = myfont.render('Human won', False, (255, 255, 255))
                     self.won += 1
-                self.screen.blit(winner,((self.side_length*self.width + self.line_th) // 2 - winner.get_width()/2 , self.side_length//3 - winner.get_height()//2))
+                self.screen.blit(winner,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - winner.get_width()/2 , self.side_length//3 - winner.get_height()//2))
                 
-                myfont = pygame.font.SysFont('Comic Sans MS', 10)
+                myfont = pygame.font.SysFont('Comic Sans MS', font_size)
                 switch_side = myfont.render('(Switching sides)', False, (0, 255, 0))
-                self.screen.blit(switch_side,((self.side_length*self.width + self.line_th) // 2 - switch_side.get_width()/2, self.side_length//3 - switch_side.get_height()//2 + winner.get_height()))
+                self.screen.blit(switch_side,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - switch_side.get_width()/2, self.side_length//3 - switch_side.get_height()//2 + winner.get_height()))
                 
                 """Shows the score"""
-                myfont = pygame.font.SysFont(self.default_font, 20)
+                myfont = pygame.font.SysFont(self.default_font, 2*font_size)
                 wtl = myfont.render('Win/Tie/Loss', False, self.white)
-                self.screen.blit(wtl,((self.side_length*self.width + self.line_th) // 2 - wtl.get_width()/2, (self.side_length*self.height)//2 - wtl.get_height()//2))
+                self.screen.blit(wtl,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - wtl.get_width()/2, (self.side_length*self.height)//2 - wtl.get_height()//2))
                 score = myfont.render(str(self.won)+"-"+str(self.tied)+"-"+str(self.lost), False, self.white)
-                self.screen.blit(score,((self.side_length*self.width + self.line_th) // 2 - score.get_width()/2, (self.side_length*self.height)//2 + wtl.get_height()))
+                self.screen.blit(score,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - score.get_width()/2, (self.side_length*self.height)//2 + wtl.get_height()))
                 
                 pygame.display.flip()
                 print("GAME IS OVER")
@@ -116,6 +117,10 @@ class GameRendering:
                 self.weights = [0]*len(self.weights)
                 self.game.board = np.copy(self.start_pos)   #don't want to change it
                 self.game.history = []
+                self.imagerect = (0, 0)
+                self.screen = pygame.display.set_mode(
+                    [self.side_length * self.width + self.line_th + self.imagerect[0],
+                     max(self.side_length * (self.height + 1) + self.line_th, self.imagerect[1])])
                 self.update_screen()
             
             elif (self.game.get_turn()+self.count)%2 and not self.game.is_final():    
@@ -135,7 +140,7 @@ class GameRendering:
                 """If machines turn, machine do move"""
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
                 if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
-                    for searches in range(500):
+                    for searches in range(numSearch):
                         tree.search()
                         if (searches%100 == 0 and searches != 0):
                             """update weight on screen every 200 search"""
@@ -143,7 +148,7 @@ class GameRendering:
 
                     self.NNvisual(tree,num_nodes=20)
                 else:
-                    tree.search_series(100)
+                    tree.search_series(numSearch)
                 predict = tree.get_most_searched_move(tree.root)
 #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
                 self.game.execute_move(predict)

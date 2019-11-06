@@ -18,7 +18,7 @@ If everything went well, you can run the code
 ```
 python3 Main.py
 ```
-###Visualisation
+##Visualisation
 If you wish to visualize the tree-search, you must install graphviz from this external link: https://graphviz.gitlab.io/download/
 If you are using Windows, you must also add the graphviz/bin directory to PATH
 If done correctly, you should see something like this: https://tinyurl.com/yyk9vfpg

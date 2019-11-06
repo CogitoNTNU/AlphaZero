@@ -13,11 +13,8 @@ def softmax_cross_entropy_with_logits(y_true, y_pred):
 
     negatives = tf.fill(tf.shape(pi), -1000.0)
     p = tf.where(where, negatives, p)
-    
-    # soft=tf.nn.softmax(p)
 
     loss = tf.nn.softmax_cross_entropy_with_logits(labels=pi, logits=p)
-    # loss=tf.losses.mean_squared_error(pi, soft)
 
     return loss
 
@@ -32,5 +29,4 @@ def softmax(y_true, y_pred):
     negatives = np.full(pi.shape, -1000.0)
     p = np.where(where, negatives, p)
     
-    # print('lin_act', p)
     return np.exp(p-np.max(p))/np.exp(p-np.max(p)).sum(axis=-1, keepdims=True)

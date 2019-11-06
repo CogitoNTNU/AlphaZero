@@ -65,10 +65,12 @@ class MCTS:
         self.T = 1
         self.level = 0
 
+    # Fuction to reset the search and start from a new board_state
     def reset_search(self):
         self.root = Node(self.game, None, None)
         self.root.board_state = self.game.get_board()
 
+    # Help function find_node_given_state
     @staticmethod
     def search_nodechildren_for_state(node, state):
         for child in node.children:
@@ -76,13 +78,14 @@ class MCTS:
                 return child
                 
                 
-
+    # Returns the node from input state
     def find_node_given_state(self, state):
         correct = None
         start = self.root
         correct = MCTS.search_nodechildren_for_state(start, state)
         return correct
-    
+
+    #  Returns the most searched childe node from a node
     def get_most_searched_child_node(self, node):
         max_node = None
         max_node_visits = 0
@@ -91,10 +94,6 @@ class MCTS:
                 max_node = child
                 max_node_visits = child.get_times_visited()
         return max_node
-
-    # Setting the evaluation algorithm used by the MCTS
-    def set_evaluation(self, eval):
-        self.agent = eval
 
     # Returning a dictionary with action as key and visit number as value
     def get_action_numbers(self, node):

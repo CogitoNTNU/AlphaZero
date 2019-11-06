@@ -9,7 +9,6 @@ import loss
 import collections
 
 
-
 # OBS: when the game is over it the algorithm expects that it is none to move
 
 class MCTS:
@@ -19,11 +18,9 @@ class MCTS:
         self.pos_move_dict = {}  # Possible actions for each state
         self.state_visits = {}  # total visits for each state
 
-
         # #######PARAMETERS#######
         self.c_puct = 2  # Used for exploration (larger=>less long term exploration)
         self.c_init = 3  # Used for exploration (larger=>more exploration)
-
 
         self.dirichlet_noise = True  # Add dirichlet noise to the prior probabilities of the root
         self.alpha = 0.9  # Dirichlet noise variable
@@ -49,7 +46,7 @@ class MCTS:
         self.return_vars = None
 
     def set_seed(self, num):
-        self.seed=num+np.random.randint(0, high=100000)
+        self.seed = num + np.random.randint(0, high=100000)
         np.random.seed(self.seed)
 
     def reset_search(self):
@@ -90,7 +87,7 @@ class MCTS:
         total_visits = self.state_visits[state]
         for action in self.pos_move_dict[state]:
             prob[self.move_to_number_func(action)] = self.search_dict[str(state) + '-' + str(action)][0] / (
-                    total_visits)
+                total_visits)
         return prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
@@ -115,18 +112,17 @@ class MCTS:
     def search_series(self, number):
         for _ in range(number):
             self.search()
-    
+
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):
         # Selection - selecting the path from
         state, action = self._selection()
         self.search_stack.append((state, action))
-        
 
         # The search traversed an internal node
         if action is not None:
             self.search()
-            
+
         if self.game.is_final():
             self.return_vars = (None, self.game.get_outcome(), True)
             return None
@@ -134,8 +130,8 @@ class MCTS:
         # Evaluation
         return self.game.get_board()
 
-        
     def backpropagate(self, result):
+        print("Search_stack", self.search_stack, self)
         state, action = self.search_stack.pop()
         # Expansion
         if not self.game.is_final():
@@ -160,7 +156,6 @@ class MCTS:
             self._backward_pass(state, str(state) + '-' + str(action), backp_value)
             self.return_vars = (backp_value, outcome, finished)
 
-
     # Selecting the path from the root node to the leaf node and returning the new state and the last action executed
     def _selection(self):
 
@@ -178,7 +173,6 @@ class MCTS:
         #                                    self.state_visits.get(state)) for action in self.pos_move_dict.get(state)]
         # max_value=max(values)
         # best_action=self.pos_move_dict.get(state)[values.index(max_value)]
-
 
         best_action = ''
         best_value = None
@@ -210,9 +204,9 @@ class MCTS:
         # return 0, {str(act): 1 / len(self.game.get_moves()) for num, act in enumerate(self.game.get_moves())}
         # return random.uniform(-1, 1), {str(act): random.random() for num, act in enumerate(self.game.get_moves())}
 
-        #state = state.reshape(self.NN_input_dim)
+        # state = state.reshape(self.NN_input_dim)
         policy, value = result
-        
+
         policy = policy.flatten()
 
         legal_moves = np.array(self.game.get_legal_NN_output())
@@ -227,10 +221,11 @@ class MCTS:
         if len(self.state_visits) == 0 and self.dirichlet_noise:
             noise = np.random.dirichlet(np.array([self.alpha for _ in range(num_legal_moves)]), (1))
             noise = noise.reshape(noise.shape[1])
-
+            print("Adding noise", policy_norm)
             return value, {str(act): (1 - self.epsilon) * policy_norm[num] + self.epsilon * noise[num] for num, act in
                            enumerate(outp)}
         else:
+            print("No noise", policy_norm)
             return value, {str(act): policy_norm[num] for num, act in enumerate(outp)}
 
     # Initializing a new leaf node
@@ -255,6 +250,7 @@ class MCTS:
                                           (state_action_values[1] + value) / (state_action_values[0] + 1),
                                           state_action_values[3]]
         self.state_visits[state] = self.state_visits.get(state) + 1
+
 
 """
 game = Gamelogic.TicTacToe()

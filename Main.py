@@ -75,37 +75,43 @@ class GameGenerator:
 
 
 # Generating data by self-play
-def generate_data(result_queue, game, res_dict, config1, num_sim, seed, games=1, num_search=130):
+def generate_data(res_dict, config1, num_games_each_process, num_search, num_process, name_weights, seeds):
+    print("Starting", num_process)
+
     import tensorflow as tf
+    print("_a_")
     import ResNet as ResNet_p
-    from keras.backend.tensorflow_backend import set_session
-    print("Starting", result_queue)
-    # config = tf.ConfigProto()
-    # config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
-    # config.log_device_placement = True  # to log device placement (on which device the operation ran)
-    # # (nothing gets printed in Jupyter, only if you run it standalone)
-    # sess = tf.Session(config=config)
-    # set_session(sess)  # set this TensorFlow session as the default session for Keras
-    # Assume that you have 12GB of GPU memory and want to allocate ~4GB:
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.08)
-
-    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-    set_session(sess)
-    # game=inp[1]
-    # res_dict=inp[2]
-    # config=inp[3]
+    print("_a_")
+    # from keras.backend.tensorflow_backend import set_session
+    print("_a_")
     from keras.optimizers import SGD
+    print("_j_")
     from loss import softmax_cross_entropy_with_logits, softmax
-    agent = ResNet_p.ResNet.build(6, 7, 2, 128, config1.policy_output_dim, num_res_blocks=7)
+    print("_i_")
+    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.08)
+    print("_h_")
+    # sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+    print("_g_")
+    # set_session(sess)
+    print("_f_")
 
-    game_generators = [GameGenerator(config1, agent, seed=seed) for _ in range(num_sim)]
+    h, w, d = config1.board_dims[1:]
+    print("_e_")
+    agent = ResNet_p.ResNet.build(h, w, d, 128, config1.policy_output_dim, num_res_blocks=7)
+    print("_d_")
+    agent.load_weights(name_weights)
+    print("_c_")
+
+    game_generators = [GameGenerator(config1, agent, seed=seeds[i]) for i in range(num_games_each_process)]
+    print("_b_")
 
     x = []
     y_policy = []
     y_value = []
+    print("Ready to play", num_process)
 
     while len(game_generators):
-        # print("test1")
+        print("test1")
         res = [game_generator.reset_tree() for game_generator in game_generators]
         for i in range(num_search):
             # print("test2")
@@ -114,21 +120,23 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, seed, games=1,
             to_predict = []
             to_predict_generators = []
             no_predict_generators = []
-            for i in range(len(res)):
+            for l in range(len(res)):
                 # print("test4")
-                if res[i] is not None:
-                    to_predict.append(res[i])
-                    to_predict_generators.append(game_generators[i])
+                if res[l] is not None:
+                    # print("To predict", res[l])
+                    # print("Stack:", game_generators[l].tree.search_stack, game_generators[l].tree, game_generators[l])
+                    to_predict.append(res[l])
+                    to_predict_generators.append(game_generators[l])
                 else:
-                    no_predict_generators.append(game_generators[i])
+                    no_predict_generators.append(game_generators[l])
                 # print("test5")
             # print("test6")
             if len(to_predict):
                 # print("to_predict", to_predict)
                 batch = np.array(to_predict)
                 results = agent.predict(batch)
-                # TODO: must use softmax
-                # print("result", results)
+                print("result", results)
+
             # print("test7")
             [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in
              range(len(to_predict_generators))]
@@ -154,7 +162,7 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, seed, games=1,
             y_value.extend(value_targets)
 
     print("finished", )
-    res_dict[str(result_queue)] = [x, y_policy, y_value]
+    res_dict[str(num_process)] = [x, y_policy, y_value]
 
 
 # # Generating data by self-play
@@ -206,7 +214,6 @@ def generate_data(result_queue, game, res_dict, config1, num_sim, seed, games=1,
 # Training AlphaZero by generating data from self-play and fitting the network
 
 
-
 def choose_best_legal_move(legal_moves, y_pred):
     best_move = np.argmax(y_pred)
     print("Best move", best_move)
@@ -217,5 +224,3 @@ def choose_best_legal_move(legal_moves, y_pred):
     else:
         y_pred[best_move] = 0
         return choose_best_legal_move(legal_moves, y_pred)
-
-

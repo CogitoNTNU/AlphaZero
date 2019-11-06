@@ -1,21 +1,21 @@
 import Main
-from multiprocessing import Process, Queue, Manager
+from multiprocessing import Process, Manager
 import numpy as np
 import time
 from FourInARow import Config
 from FourInARow import Gamelogic
 
 
-def multiprocess_function(num_processes, game, agent, config, num_sim=20, games=1, num_search=400):
+def multiprocess_function(config, num_processes, num_games_each_process, num_search, name_weights, seeds=None):
     res_dict = Manager().dict()
     x = list()
     y_pol = list()
     y_val = list()
 
     workers = [Process(target=Main.generate_data,
-                       args=(x, Main.Gamelogic.FourInARow(), res_dict, config, games, x))
-               for x in range(num_processes)]
-    
+                       args=(res_dict, config, num_games_each_process, num_search, i, name_weights, seeds[i]))
+               for i in range(num_processes)]
+
     for worker in workers: worker.start()
     for worker in workers: worker.join()
 
@@ -57,19 +57,30 @@ def train_process(x, y_pol, y_val, load_name, store_name, h, w, d):
     agent.save_weights(store_name)
 
 
-def train(game, config, num_filters, num_res_blocks, num_sim=10, epochs=1000000, games_each_epoch=10,
-          batch_size=32, num_train_epochs=10):
+def train(config, epochs, num_processes, num_games_each_process, num_search, game_name):
     h, w, d = config.board_dims[1:]
 
+    # import ResNet as nn
+
+    base_name = "Models/" + str(game_name) + "/"
+    # nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=7).save_weights(base_name + "_ 0.h5")
+
     for epoch in range(epochs):
-        x, y_pol, y_val = multiprocess_function(2, game, None, Config, games=2)
-        worker = Process(target=train_process, args=(x, y_pol, y_val, h, w, d))
+        load_weights_name = base_name + "_" + str(epoch) + ".h5"
+        seed_max = 1000000000
+        seeds = [[np.random.randint(0, seed_max) for _ in range(num_games_each_process)] for _ in
+                 range(num_games_each_process)]
+        x, y_pol, y_val = multiprocess_function(config, num_processes, num_games_each_process, num_search,
+                                                load_weights_name,
+                                                seeds=seeds)
+        store_weights_name = base_name + "_" + str(epoch + 1) + ".h5"
+        worker = Process(target=train_process, args=(x, y_pol, y_val, store_weights_name, h, w, d))
         worker.start()
         worker.join()
         print("Finished epoch", epoch)
         time.sleep(10)
-    return agent
+    return None
 
 
 if __name__ == '__main__':
-    train(Gamelogic.FourInARow(), Config, 128, 0)
+    train(Config, 2, 2, 2, 100, Config.name)

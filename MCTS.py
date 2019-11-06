@@ -82,6 +82,15 @@ class MCTS:
         start = self.root
         correct = MCTS.search_nodechildren_for_state(start, state)
         return correct
+    
+    def get_most_searched_child_node(self, node):
+        max_node = None
+        max_node_visits = 0
+        for child in node.children:
+            if child.get_times_visited() > max_node_visits:
+                max_node = child
+                max_node_visits = child.get_times_visited()
+        return max_node
 
     # Setting the evaluation algorithm used by the MCTS
     def set_evaluation(self, eval):

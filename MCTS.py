@@ -61,7 +61,6 @@ class MCTS:
         self.game = game
         self.Config = Config
         self.root.board_state = np.copy(start_state)
-        self.start_state = np.copy(start_state)
         self.agent = agent
         self.T = 1
         self.level = 0
@@ -98,8 +97,7 @@ class MCTS:
             action_numbers[child.last_action] = child.get_times_visited()
         return action_numbers
 
-        # Returning the prior probabilities of a state, also known as the "raw" NN predictions
-
+    # Returning the prior probabilities of a state, also known as the "raw" NN predictions
     def get_prior_probabilities(self, board_state):
         pred = self.agent.predict(board_state)
         return loss.softmax(np.array(self.game.get_legal_NN_output()), pred[0]), pred[1]
@@ -126,8 +124,7 @@ class MCTS:
             pi[action] = (actions[action]) ** (1 / self.T)
         return pi
 
-        # Returning a random move proportional to the temperature probabilities
-
+    # Returning a random move proportional to the temperature probabilities
     def get_temperature_move(self, node):
         pi = self.get_temperature_probabilities(node)
         moves = [move for move in pi.keys()]
@@ -136,13 +133,7 @@ class MCTS:
         probs = probs / sum(probs)
         return np.random.choice(moves, p=probs)
 
-    # def evaluate(self, board_state, to_play):
-    #     if to_play != 0:
-    #         value = 1 - self.evaluate(board_state, 0)
-    #     else:
-    #         value = self.agent.predict(board_state)[1]
-    #         return value
-
+    #Returns the most seached move from a state based on the node given as input
     def get_most_searched_move(self, node):
         actions = self.get_action_numbers(node)
         most_searched_move = 0
@@ -160,40 +151,34 @@ class MCTS:
             self.search()
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
-    # TODO ikke lage noder når game er over
     def search(self):
         game = self.game
         parent = self.root
-        # print("start:", game.history)
         while not parent.is_leaf_node():
             best_puct = None
             for child in parent.children:
-                # print("child.last action:", child.last_action)
                 curr_puct = self.PUCT(parent, child)
                 if (best_puct == None or curr_puct >= best_puct):
                     best_child = child
                     best_puct = curr_puct
             self.level += 1
             parent = best_child
-            # print("best child:", best_child.last_action)
             self.game.execute_move(best_child.last_action)
 
         raw_pred = self.agent.predict(np.array([game.get_board()]))
         result = loss.softmax(np.array(game.get_legal_NN_output()), raw_pred[0])
-        # result = self.agent.predict(np.array([parent.get_board_state()]))
 
         if not self.game.is_final():
             valid_moves = game.get_moves()
             for move in valid_moves:
                 Node(game, parent, move, result[0][move])
-            # parent.n += 1
             self.back_propagate(parent, raw_pred[1][0][0])
             self.level = 0
         else:
-            # parent.n += 1
             self.back_propagate(parent, raw_pred[1][0][0])
             self.level = 0
 
+    #Propagates the values from the search back into the tree
     def back_propagate(self, node, t):
         game = self.game
         if game.is_final():
@@ -209,7 +194,7 @@ class MCTS:
             if node.get_parent() is not None:
                 game.undo_move()
                 self.back_propagate(node.get_parent(), -t)
-
+    #Function for calculating the PUCT (The exploration vs exploitation function)
     def PUCT(self, node, child):
         N = child.n
         sum_N_potential_actions = max(node.n - 1,1)

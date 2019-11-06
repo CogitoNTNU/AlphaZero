@@ -117,6 +117,10 @@ class GameRendering:
                 self.weights = [0]*len(self.weights)
                 self.game.board = np.copy(self.start_pos)   #don't want to change it
                 self.game.history = []
+                self.imagerect = (0, 0)
+                self.screen = pygame.display.set_mode(
+                    [self.side_length * self.width + self.line_th + self.imagerect[0],
+                     max(self.side_length * (self.height + 1) + self.line_th, self.imagerect[1])])
                 self.update_screen()
             
             elif (self.game.get_turn()+self.count)%2 and not self.game.is_final():    

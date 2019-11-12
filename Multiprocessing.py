@@ -4,6 +4,7 @@ import numpy as np
 import time
 from FourInARow import Config
 from FourInARow import Gamelogic
+# from TicTacToe import Config
 
 
 def multiprocess_function(config, num_processes, num_games_each_process, num_search, name_weights, seeds=None):
@@ -16,20 +17,22 @@ def multiprocess_function(config, num_processes, num_games_each_process, num_sea
                        args=(res_dict, config, num_games_each_process, num_search, i, name_weights, seeds[i]))
                for i in range(num_processes)]
 
-    for worker in workers: worker.start()
+    for worker in workers:
+        worker.daemon = True
+        worker.start()
     for worker in workers: worker.join()
 
     print("done")
-    print(res_dict)
+    # print(res_dict)
 
     for value in res_dict.values():
         x.extend(value[0])
         y_pol.extend(value[1])
         y_val.extend(value[2])
 
-    now = time.time()
-    print("size", len(res_dict.keys()))
-    print(time.time() - now)
+    # now = time.time()
+    # print("size", len(res_dict.keys()))
+    # print(time.time() - now)
     return np.array(x), np.array(y_pol), np.array(y_val)
 
 
@@ -63,24 +66,26 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
     # import ResNet as nn
 
     base_name = "Models/" + str(game_name) + "/"
-    # nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=7).save_weights(base_name + "_ 0.h5")
+    # nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=7).save_weights(base_name + "4r_0.h5")
 
-    for epoch in range(epochs):
-        load_weights_name = base_name + "_" + str(epoch) + ".h5"
+    for epoch in range(193, epochs):
+        now=time.time()
+        load_weights_name = base_name + "4r_" + str(epoch) + ".h5"
         seed_max = 1000000000
         seeds = [[np.random.randint(0, seed_max) for _ in range(num_games_each_process)] for _ in
                  range(num_games_each_process)]
         x, y_pol, y_val = multiprocess_function(config, num_processes, num_games_each_process, num_search,
                                                 load_weights_name,
                                                 seeds=seeds)
-        store_weights_name = base_name + "_" + str(epoch + 1) + ".h5"
-        worker = Process(target=train_process, args=(x, y_pol, y_val, store_weights_name, h, w, d))
+        store_weights_name = base_name + "4r_" + str(epoch + 1) + ".h5"
+        worker = Process(target=train_process, args=(x, y_pol, y_val, load_weights_name, store_weights_name, h, w, d))
+        worker.daemon = True
         worker.start()
         worker.join()
-        print("Finished epoch", epoch)
-        time.sleep(10)
+        print("Finished epoch", epoch, "time:", time.time()-now)
+        # time.sleep(10)
     return None
 
 
 if __name__ == '__main__':
-    train(Config, 2, 2, 2, 100, Config.name)
+    train(Config, 300, 8, 100, 400, Config.name)

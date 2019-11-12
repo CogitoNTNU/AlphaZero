@@ -19,14 +19,14 @@ class MCTS:
         self.state_visits = {}  # total visits for each state
 
         # #######PARAMETERS#######
-        self.c_puct = 2  # Used for exploration (larger=>less long term exploration)
+        self.c_puct = 4  # Used for exploration (larger=>less long term exploration)
         self.c_init = 3  # Used for exploration (larger=>more exploration)
 
         self.dirichlet_noise = True  # Add dirichlet noise to the prior probabilities of the root
-        self.alpha = 0.9  # Dirichlet noise variable
-        self.epsilon = 0.25  # The amount of dirichlet noise that is added
+        self.alpha = 1.3  # Dirichlet noise variable
+        self.epsilon = 0.5  # The amount of dirichlet noise that is added
 
-        self.temperature = 0.5
+        self.temperature = 1.4
 
         # #######I/O shape for eval.#######
         self.NN_input_dim = None
@@ -131,7 +131,7 @@ class MCTS:
         return self.game.get_board()
 
     def backpropagate(self, result):
-        print("Search_stack", self.search_stack, self)
+        # print("Search_stack", self.search_stack, self)
         state, action = self.search_stack.pop()
         # Expansion
         if not self.game.is_final():
@@ -194,7 +194,8 @@ class MCTS:
 
     # Calculating the value for a state-action pair
     def PUCT(self, args, parent_visits):
-        exploration = math.log((1 + parent_visits + self.c_puct) / self.c_puct) + self.c_init
+        # exploration = math.log((1 + parent_visits + self.c_puct) / self.c_puct) + self.c_init
+        exploration = 4
         Q = args[2]
         U = exploration * args[3] * math.sqrt(parent_visits) / (1 + args[0])
         return Q + U
@@ -221,11 +222,11 @@ class MCTS:
         if len(self.state_visits) == 0 and self.dirichlet_noise:
             noise = np.random.dirichlet(np.array([self.alpha for _ in range(num_legal_moves)]), (1))
             noise = noise.reshape(noise.shape[1])
-            print("Adding noise", policy_norm)
+            # print("Adding noise", policy_norm)
             return value, {str(act): (1 - self.epsilon) * policy_norm[num] + self.epsilon * noise[num] for num, act in
                            enumerate(outp)}
         else:
-            print("No noise", policy_norm)
+            # print("No noise", policy_norm)
             return value, {str(act): policy_norm[num] for num, act in enumerate(outp)}
 
     # Initializing a new leaf node

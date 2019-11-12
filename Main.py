@@ -55,8 +55,8 @@ class GameGenerator:
     def execute_best_move(self):
         state = self.game.get_state()
         temp_move = self.tree.get_temperature_move(state)
-        print(self.tree.get_prior_probabilities(state))
-        print("temp move", temp_move, self.tree.seed)
+        # print(self.tree.get_prior_probabilities(state))
+        # print("temp move", temp_move, self.tree.seed)
         self.history.append(temp_move)
         self.policy_targets.append(np.array(self.tree.get_posterior_probabilities(state)))
         self.player_moved_list.append(self.game.get_turn())
@@ -79,31 +79,31 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
     print("Starting", num_process)
 
     import tensorflow as tf
-    print("_a_")
+    # print("_a_")
     import ResNet as ResNet_p
-    print("_a_")
-    # from keras.backend.tensorflow_backend import set_session
-    print("_a_")
+    # print("_a_")
+    from keras.backend.tensorflow_backend import set_session
+    # print("_a_")
     from keras.optimizers import SGD
-    print("_j_")
+    # print("_j_")
     from loss import softmax_cross_entropy_with_logits, softmax
-    print("_i_")
-    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.08)
-    print("_h_")
-    # sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-    print("_g_")
-    # set_session(sess)
-    print("_f_")
+    # print("_i_")
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.03)
+    # print("_h_")
+    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+    # print("_g_")
+    set_session(sess)
+    # print("_f_")
 
     h, w, d = config1.board_dims[1:]
-    print("_e_")
+    # print("_e_")
     agent = ResNet_p.ResNet.build(h, w, d, 128, config1.policy_output_dim, num_res_blocks=7)
-    print("_d_")
+    # print("_d_")
     agent.load_weights(name_weights)
-    print("_c_")
+    # print("_c_")
 
     game_generators = [GameGenerator(config1, agent, seed=seeds[i]) for i in range(num_games_each_process)]
-    print("_b_")
+    # print("_b_")
 
     x = []
     y_policy = []
@@ -111,7 +111,7 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
     print("Ready to play", num_process)
 
     while len(game_generators):
-        print("test1")
+        # print("test1")
         res = [game_generator.reset_tree() for game_generator in game_generators]
         for i in range(num_search):
             # print("test2")
@@ -135,7 +135,7 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
                 # print("to_predict", to_predict)
                 batch = np.array(to_predict)
                 results = agent.predict(batch)
-                print("result", results)
+                # print("result", results)
 
             # print("test7")
             [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in

@@ -139,7 +139,7 @@ class GameRendering:
             elif not self.game.is_final():
                 """If machines turn, machine do move"""
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
-                if len(self.game.history) > 0 and len(self.game.get_moves()) > 1:   # Does not compute first, and last possible move very deeply
+                if len(self.game.get_moves()) > 1:   # Does not compute last possible move very deeply
                     for searches in range(numSearch):
                         tree.search()
                         if (searches%100 == 0 and searches != 0):

@@ -53,8 +53,13 @@ _Coming soon_
 ## Add your own game
 Create a folder for your game and implement the functions in Config (Contains information about board dimensions, and can convert between game actions and action numbers) and Gamelogic (Contains board and functions like execute a move, undo, reset, get legal moves, and see if someone has won).
 
-## Additions to future projects
-Pondering, Virtual loss, Chess type clock, Pretrained net, command line to play against different versions, a little temperature in match conditions to get variation
+## Additions for future projects
+* Pondering - Make the network think while it is the players turn.  
+* Virtual loss - Spread out threads on different lines while multithreading, to avoid duplicate work.  
+* Chess type clock - Add ability to play with a timer so that the AI can think as long as the human, as to simulate a real match.  
+* Pretrained net - Have a base net which has recieved a good amount of base training, so that different values of learning drop and experiments could be performed on it with little additional training.  
+* Choose oponent via command line arguments - Command line argument parameter to play against different versions of the nets.  
+* Match temperature - Some temperature as to make the network not behave deterministic when playing against a human, especially in Tic Tac Toe.
 
 ## Acknowledgments
 * The [AlphaZero-](https://deepmind.com/documents/260/alphazero_preprint.pdf "AlphaZero paper by D. Silver et al.") and [AphaGo Zero paper](https://deepmind.com/documents/119/agz_unformatted_nature.pdf "AlphaGo Zero paper by D. Silver et al.") are essential to read to achieve a thorough understanding of the algorithm. 

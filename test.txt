@@ -1,6 +1,0 @@
-antall spill igjen: 300
-antall spill igjen: 300
-antall spill igjen: 400
-antall spill igjen: 400
-antall spill igjen: 400
-antall spill igjen: 400

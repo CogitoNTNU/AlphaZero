@@ -111,7 +111,10 @@ class MCTS:
     # Executing MCTS search a "number" times
     def search_series(self, number):
         for _ in range(number):
-            self.search()
+            res = self.search()
+            if res is not None:
+                res = self.eval.predict(np.array([res]))
+            self.backpropagate(res)
 
     # Executing a single MCTS search: Selection-Evaluation-Expansion-Backward pass
     def search(self):

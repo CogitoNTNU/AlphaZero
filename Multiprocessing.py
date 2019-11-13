@@ -5,7 +5,7 @@ import time
 from FourInARow import Config
 from FourInARow import Gamelogic
 # from TicTacToe import Config
-
+from collections import defaultdict
 
 def multiprocess_function(config, num_processes, num_games_each_process, num_search, name_weights, seeds=None):
     res_dict = Manager().dict()
@@ -68,7 +68,7 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
     base_name = "Models/" + str(game_name) + "/"
     # nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=7).save_weights(base_name + "4r_0.h5")
 
-    for epoch in range(193, epochs):
+    for epoch in range(23, epochs):
         now=time.time()
         load_weights_name = base_name + "4r_" + str(epoch) + ".h5"
         seed_max = 1000000000
@@ -77,6 +77,29 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
         x, y_pol, y_val = multiprocess_function(config, num_processes, num_games_each_process, num_search,
                                                 load_weights_name,
                                                 seeds=seeds)
+        print("pre x: ", len(x))
+        print("pre x[0]: ", x[0], y_pol[0], y_val[0])
+        dd = defaultdict(lambda: [0, None, np.zeros(y_pol[0].shape), 0])
+        for i in range(len(x)):
+            c = dd[str(x[i])]
+            c[0] += 1
+            c[1] = x[i]
+            c[2] += y_pol[i]
+            c[3] += y_val[i]
+        print("mid x[0]: ", dd[str(x[0])])
+        x = []
+        y_pol = []
+        y_val = []
+        for value in dd.values():
+            x.append(value[1])
+            y_pol.append(value[2]/value[0])
+            y_val.append(value[3]/value[0])
+        x = np.array(x)
+        y_pol = np.array(y_pol)
+        y_val = np.array(y_val)
+        print("post x[0]: ", y_pol[0], y_val[0])
+        print("post x: ", len(x))
+
         store_weights_name = base_name + "4r_" + str(epoch + 1) + ".h5"
         worker = Process(target=train_process, args=(x, y_pol, y_val, load_weights_name, store_weights_name, h, w, d))
         worker.daemon = True
@@ -88,4 +111,4 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
 
 
 if __name__ == '__main__':
-    train(Config, 300, 8, 100, 400, Config.name)
+    train(Config, 300, 2, 5, 200, Config.name)

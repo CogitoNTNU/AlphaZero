@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from Main3 import *
-
+from Main import *
+from keras.optimizers import SGD
+from loss import softmax_cross_entropy_with_logits, softmax
 # from TicTacToe import Gamelogic
 # from TicTacToe import Config
 from FourInARow import Gamelogic
@@ -13,14 +14,14 @@ from keras.models import load_model
 
 """get board dimensions and build agent"""
 h, w, d = Config.board_dims[1:]
-agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=5)
+agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=7)
 agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
                   optimizer=SGD(lr=0.001, momentum=0.9))
 
 """retrieve weights file"""
 
 game = Gamelogic.FourInARow()
-agent.load_weights('Models/FourInARow/70_batch.h5')
+agent.load_weights('Models/FourInARow/4r_299.h5')
 
 """start game-loop"""
 rendering = GameRendering(game, agent, Config)

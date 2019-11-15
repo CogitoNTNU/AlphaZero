@@ -7,6 +7,29 @@ from FourInARow import Gamelogic
 # from TicTacToe import Config
 from collections import defaultdict
 
+
+class DataStore:
+    def __init__(self, max_epochs_stored):
+        self.data = {}
+        self.max_epochs_stored = max_epochs_stored
+        self.counter = 0
+
+    def put_data(self, x, y_pol, y_val):
+        self.data[self.counter] = [x, y_val, y_pol]
+        self.counter = (self.counter + 1) % self.max_epochs_stored
+
+    def get_data(self):
+        x = []
+        y_pol = []
+        y_val = []
+
+        for data in self.data.values():
+            x.extend(data[0])
+            y_pol.extend(data[1])
+            y_val.extend(data[2])
+        return np.array(x), np.array(y_pol), np.array(y_val)
+
+
 def multiprocess_function(config, num_processes, num_games_each_process, num_search, name_weights, seeds=None):
     res_dict = Manager().dict()
     x = list()
@@ -89,14 +112,16 @@ def combine_equals(x, y_pol, y_val):
 def train(config, epochs, num_processes, num_games_each_process, num_search, game_name):
     h, w, d = config.board_dims[1:]
 
-    # import ResNet as nn
+    data_store = DataStore(4)
+
+    import ResNet as nn
 
     base_name = "Models/" + str(game_name) + "/"
-    # nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=7).save_weights(base_name + "4r_0.h5")
+    nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=20).save_weights(base_name + "20_0.h5")
 
-    for epoch in range(23, epochs):
-        now=time.time()
-        load_weights_name = base_name + "4r_" + str(epoch) + ".h5"
+    for epoch in range(epochs):
+        now = time.time()
+        load_weights_name = base_name + "20_" + str(epoch) + ".h5"
         seed_max = 1000000000
         seeds = [[np.random.randint(0, seed_max) for _ in range(num_games_each_process)] for _ in
                  range(num_games_each_process)]
@@ -104,17 +129,20 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
                                                 load_weights_name,
                                                 seeds=seeds)
         x, y_pol, y_val = combine_equals(x, y_pol, y_val)
-        
 
-        store_weights_name = base_name + "4r_" + str(epoch + 1) + ".h5"
+        data_store.max_epochs_stored = min(20, 4 + 3 * epochs // 4)
+        data_store.put_data(x, y_pol, y_val)
+        x, y_pol, y_val = data_store.get_data()
+
+        store_weights_name = base_name + "20_" + str(epoch + 1) + ".h5"
         worker = Process(target=train_process, args=(x, y_pol, y_val, load_weights_name, store_weights_name, h, w, d))
         worker.daemon = True
         worker.start()
         worker.join()
-        print("Finished epoch", epoch, "time:", time.time()-now)
+        print("Finished epoch", epoch, "time:", time.time() - now)
         # time.sleep(10)
     return None
 
 
 if __name__ == '__main__':
-    train(Config, 300, 2, 5, 200, Config.name)
+    train(Config, 3000, 16, 300, 400, Config.name)

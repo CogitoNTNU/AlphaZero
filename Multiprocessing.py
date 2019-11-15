@@ -60,6 +60,32 @@ def train_process(x, y_pol, y_val, load_name, store_name, h, w, d):
     agent.save_weights(store_name)
 
 
+def combine_equals(x, y_pol, y_val):
+    print("pre x: ", len(x))
+    print("pre x[0]: ", x[0], y_pol[0], y_val[0])
+    dd = defaultdict(lambda: [0, None, np.zeros(y_pol[0].shape), 0])
+    for i in range(len(x)):
+        c = dd[str(x[i])]
+        c[0] += 1
+        c[1] = x[i]
+        c[2] += y_pol[i]
+        c[3] += y_val[i]
+    print("mid x[0]: ", dd[str(x[0])])
+    x = []
+    y_pol = []
+    y_val = []
+    for value in dd.values():
+        x.append(value[1])
+        y_pol.append(value[2] / value[0])
+        y_val.append(value[3] / value[0])
+    x = np.array(x)
+    y_pol = np.array(y_pol)
+    y_val = np.array(y_val)
+    print("post x[0]: ", y_pol[0], y_val[0])
+    print("post x: ", len(x))
+    return x, y_pol, y_val
+
+
 def train(config, epochs, num_processes, num_games_each_process, num_search, game_name):
     h, w, d = config.board_dims[1:]
 
@@ -77,28 +103,8 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
         x, y_pol, y_val = multiprocess_function(config, num_processes, num_games_each_process, num_search,
                                                 load_weights_name,
                                                 seeds=seeds)
-        print("pre x: ", len(x))
-        print("pre x[0]: ", x[0], y_pol[0], y_val[0])
-        dd = defaultdict(lambda: [0, None, np.zeros(y_pol[0].shape), 0])
-        for i in range(len(x)):
-            c = dd[str(x[i])]
-            c[0] += 1
-            c[1] = x[i]
-            c[2] += y_pol[i]
-            c[3] += y_val[i]
-        print("mid x[0]: ", dd[str(x[0])])
-        x = []
-        y_pol = []
-        y_val = []
-        for value in dd.values():
-            x.append(value[1])
-            y_pol.append(value[2]/value[0])
-            y_val.append(value[3]/value[0])
-        x = np.array(x)
-        y_pol = np.array(y_pol)
-        y_val = np.array(y_val)
-        print("post x[0]: ", y_pol[0], y_val[0])
-        print("post x: ", len(x))
+        x, y_pol, y_val = combine_equals(x, y_pol, y_val)
+        
 
         store_weights_name = base_name + "4r_" + str(epoch + 1) + ".h5"
         worker = Process(target=train_process, args=(x, y_pol, y_val, load_weights_name, store_weights_name, h, w, d))

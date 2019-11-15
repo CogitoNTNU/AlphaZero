@@ -45,7 +45,7 @@ class ResNet:
         conv1 = Conv2D(filters=int(filters),
                        kernel_size=(3, 3),
                        padding="same",
-                       use_bias=False,
+                       use_bias=True,
                        kernel_initializer=TruncatedNormal(stddev=0.05),
                        kernel_regularizer=l2(reg)
                        )(data)
@@ -60,7 +60,7 @@ class ResNet:
             kernel_size=(3, 3),
             strides=strides,
             padding="same",
-            use_bias=False,
+            use_bias=True,
             kernel_initializer=TruncatedNormal(stddev=0.05),
             kernel_regularizer=l2(reg)
         )(act1)
@@ -74,7 +74,7 @@ class ResNet:
                 filters=filters,
                 kernel_size=(1, 1),
                 strides=strides,
-                use_bias=False,
+                use_bias=True,
                 kernel_initializer=TruncatedNormal(stddev=0.05),
                 kernel_regularizer=l2(reg)
             )(act1)
@@ -103,10 +103,10 @@ class ResNet:
         :return: Matrix of percentages for different moves
         """
         conv1 = Conv2D(
-            filters=2,
+            filters=32,
             kernel_size=(3, 3),
             strides=(1, 1),
-            use_bias=False,
+            use_bias=True,
             padding="same",
             kernel_initializer=TruncatedNormal(stddev=0.05)
         )(data)
@@ -136,10 +136,10 @@ class ResNet:
         """
 
         conv1 = Conv2D(
-            filters=1,
+            filters=32,
             kernel_size=(1, 1),
             strides=(1, 1),
-            use_bias=False,
+            use_bias=True,
             padding="same",
             kernel_initializer=TruncatedNormal(stddev=0.05),
         )(data)
@@ -197,7 +197,7 @@ class ResNet:
             filters=filters,
             kernel_size=(3, 3),
             strides=(1, 1),
-            use_bias=False,
+            use_bias=True,
             padding="same",
             kernel_initializer=TruncatedNormal(stddev=0.05),
             kernel_regularizer=l2(reg)

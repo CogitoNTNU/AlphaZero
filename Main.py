@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description='Command line for AZ!')
 parser.add_argument("--game", default= "TicTacToe",
                     choices= ["TicTacToe", "FourInARow"], required= False, help= "Choose one of the games from the list")
 parser.add_argument("--numSearch", type = int,  default = 100, help = "This is number of searches preformed by MCTS")
+parser.add_argument("--opponent", type = str, default= "4r_7", help = "Choose the agent you want to play against")
 
 args = parser.parse_args()
 typeOfGame = args.game

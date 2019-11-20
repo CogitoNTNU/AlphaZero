@@ -63,9 +63,9 @@ elif typeOfGame == "TicTacToe":
 """get board dimensions and build agent"""
 h, w, d = Config.board_dims[1:]
 if typeOfGame == "FourInARow":
-    agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=7)
+    agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=10)
 elif typeOfGame == "TicTacToe":
-    agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=7)
+    agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=10)
 
 
 agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],

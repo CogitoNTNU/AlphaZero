@@ -80,6 +80,7 @@ class GameRendering:
         while True:
             self.mouse_pos = pygame.mouse.get_pos()
             if self.game.is_final():
+                sleep(4)
                 """Show death screen"""
                 self.screen.fill(self.black)
                 font_size = max((self.side_length*self.width + self.line_th) // 35 , 20)

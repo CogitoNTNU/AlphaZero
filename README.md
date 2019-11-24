@@ -1,11 +1,11 @@
 # AlphaZero
 AlphaZero is a computer program developed by artificial intelligence research company DeepMind. The program is generalized to work on all two-player complete information games such as tic tac toe, four in a row, chess and go. It is only given the rules of the game, and learns to master the game solely by playing against itself.
 
-## Who we are
+## About us
 We are a project group within the student organization Cogito at NTNU (Norwegian University of Science and Technology). The group of eight has worked on this through the fall of 2019.
 
 ## Motivation
-This project was created to achieve a greater understanding on how the AlphaZero algorithm work, and how to make it work for any game. Optimization and introduction of paralell training was motivated by the desire of being able to train a network in reasonable time for games with large action spaces. The contiuation of the visualization was fueled by the quest to compare the networks against a human agent, and to see how the network is thinking.
+This project was created to achieve a greater understanding of the workings of one of the hottest reinforcement learning algorithms, as well as to have fun in the process. Optimization and introduction of parallel training was motivated by the desire of being able to train a network in reasonable time. This is espacially important for games with large action- and state spaces, as convergence will take a long time. The visualization was fueled by the quest to see how the network is thinking.
 
 ## Installation
 Clone the repository

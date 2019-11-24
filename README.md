@@ -40,7 +40,6 @@ You should now see something like this:
 To play against AlphaZero write:
 ```
 python3 play.py
-
 ```
 ### Tweak parameters
 There are command line arguments, that simplify changing between games, number of searches and opponent. Currently supported games are Tic Tac Toe and Four In A Row. Default values are TicTacToe, 500 and 10_3_3.h5 respectively.

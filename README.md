@@ -37,7 +37,7 @@ You should now see something like this:
 
 
 ## How to play
-To play against AlphaZero write:
+To play against AlphaZero execute:
 ```
 python3 play.py
 ```
@@ -47,6 +47,12 @@ There are command line arguments, that simplify changing between games, number o
 python3 play.py --game FourInARow --numSearch 1000
 ```
 
+## Training 
+### How to train
+To train AlphaZero run:
+```
+python3 train.py
+```
 ### Speeding up training
 Even though AlphaZero is an effective algorithm and has achieved impressive feats, it is infamous for its computation costs required for training. Speeding up training is essential for several reasons. First of all, faster training allows us to tune hyperparameters considerably faster; we calculated that it went from taking weeks to only taking a few days. Secondly, AlphaZero are now able to complete training in a couple of days instead of weeks.<br><br>
 There were two concepts that significantly sped up the training; parallelization and batching. We also used caching, which caused a minor speed improvement. 

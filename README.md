@@ -71,7 +71,7 @@ Create a folder for your game and implement the functions in Config (Contains in
 * Pondering - Make the network think while it is the players turn.  
 * Virtual loss - Spread out threads on different lines while multithreading, to avoid duplicate work.  
 * Chess type clock - Add ability to play with a timer so that the AI can think as long as the human, as to simulate a real match.  
-* Transfer learning - Use a pre-trained resnet and only train the first and last few layers. This shuold speed up convergence significantly. The weights can for instance be taken from Leela Chess Zero.
+* Transfer learning - Use a pre-trained resnet and only train the first and last few layers. This should speed up convergence significantly. The weights can for instance be taken from Leela Chess Zero.
 * Match temperature - A temperature argument as to make the network not behave deterministicly when playing against a human (can be extended easily by the same approach used in training).
 
 ## Acknowledgments

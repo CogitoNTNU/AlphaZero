@@ -72,4 +72,4 @@ Create a folder for your game and implement the functions in Config (Contains in
 
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.

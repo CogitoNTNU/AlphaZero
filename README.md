@@ -51,8 +51,10 @@ python3 play.py --game FourInARow --numSearch 1000
 Having played only 3000 games of Tic Tac Toe againts itself, AZ was able to master the game. By only jusing raw predictrions from the resnet, it plays perfectly. 
 After 100 000 self-played games on Four In A Row, the network is able to play at a decent level with 500 searches per move. 
 
-### Training on larger scale
-_Coming soon_
+### Speeding up training
+Even though AlphaZero is an effective algorithm and has achieved impressive feats, it is infamous for its computation costs required for training. Speeding up training is essential for several reasons. First of all, faster training allows us to tune hyperparameters considerably faster; we calculated that it went from taking weeks to only taking a few days. Secondly, AlphaZero are now able to complete training in a couple of days instead of weeks.
+There were two concepts that significantly sped up the training; parallelization and batching. We also used caching, which had a minor speed improvement. 
+We had eight processes that generated games in parallel. Each of which played 400 games simultaneously, bathing up the Resnet predictions. Thus a total of 4000 games were played in parallel each epoch. All of this resulted in a speedup of about 16 times.
 
 ## Add your own game
 Create a folder for your game and implement the functions in Config (Contains information about board dimensions, and can convert between game actions and action numbers) and Gamelogic (Contains board and functions like execute a move, undo, reset, get legal moves, and see if someone has won).

@@ -61,9 +61,8 @@ Create a folder for your game and implement the functions in Config (Contains in
 * Pondering - Make the network think while it is the players turn.  
 * Virtual loss - Spread out threads on different lines while multithreading, to avoid duplicate work.  
 * Chess type clock - Add ability to play with a timer so that the AI can think as long as the human, as to simulate a real match.  
-* Pretrained net - Have a base net which has recieved a good amount of base training, so that different values of learning drop and experiments could be performed on it with little additional training.  
-* Choose oponent via command line arguments - Command line argument parameter to play against different versions of the nets.  
-* Match temperature - Some temperature as to make the network not behave deterministic when playing against a human, especially in Tic Tac Toe.
+* Transfer learning - Use a pre-trained resnet and only train the first and last few layers. This shuold speed up convergence significantly. The weights can for instance be taken from Leela Chess Zero.
+* Match temperature - A temperature argument as to make the network not behave deterministicly when playing against a human (can be extended easily by the same approach used in training).
 
 ## Acknowledgments
 * The [AlphaZero-](https://deepmind.com/documents/260/alphazero_preprint.pdf "AlphaZero paper by D. Silver et al.") and [AphaGo Zero paper](https://deepmind.com/documents/119/agz_unformatted_nature.pdf "AlphaGo Zero paper by D. Silver et al.") are essential to read to achieve a thorough understanding of the algorithm. 

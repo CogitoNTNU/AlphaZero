@@ -1,9 +1,8 @@
-import Main
+import Train
 from multiprocessing import Process, Manager
 import numpy as np
 import time
 from FourInARow import Config
-from FourInARow import Gamelogic
 # from TicTacToe import Config
 from collections import defaultdict
 
@@ -36,7 +35,7 @@ def multiprocess_function(config, num_processes, num_games_each_process, num_sea
     y_pol = list()
     y_val = list()
 
-    workers = [Process(target=Main.generate_data,
+    workers = [Process(target=Train.generate_data,
                        args=(res_dict, config, num_games_each_process, num_search, i, name_weights, seeds[i]))
                for i in range(num_processes)]
 
@@ -46,16 +45,12 @@ def multiprocess_function(config, num_processes, num_games_each_process, num_sea
     for worker in workers: worker.join()
 
     print("done")
-    # print(res_dict)
 
     for value in res_dict.values():
         x.extend(value[0])
         y_pol.extend(value[1])
         y_val.extend(value[2])
 
-    # now = time.time()
-    # print("size", len(res_dict.keys()))
-    # print(time.time() - now)
     return np.array(x), np.array(y_pol), np.array(y_val)
 
 
@@ -75,17 +70,11 @@ def train_process(x, y_pol, y_val, load_name, store_name, h, w, d):
     agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
                   optimizer=SGD(lr=0.0005, momentum=0.9))
     agent.load_weights(load_name)
-    # print("Epoch")
-    # # print("x", x, x.shape)
-    # # print("y_pol", y_pol, y_val.shape)
-    # # print("y_val", y_val, y_val.shape)
     agent.fit(x=x, y=[y_pol, y_val], batch_size=min(128, len(x)), epochs=2, callbacks=[])
     agent.save_weights(store_name)
 
 
 def combine_equals(x, y_pol, y_val):
-    # print("pre x: ", len(x))
-    # print("pre x[0]: ", x[0], y_pol[0], y_val[0])
     dd = defaultdict(lambda: [0, None, np.zeros(y_pol[0].shape), 0])
     for i in range(len(x)):
         c = dd[str(x[i])]
@@ -93,7 +82,6 @@ def combine_equals(x, y_pol, y_val):
         c[1] = x[i]
         c[2] += y_pol[i]
         c[3] += y_val[i]
-    # print("mid x[0]: ", dd[str(x[0])])
     x = []
     y_pol = []
     y_val = []
@@ -104,8 +92,6 @@ def combine_equals(x, y_pol, y_val):
     x = np.array(x)
     y_pol = np.array(y_pol)
     y_val = np.array(y_val)
-    # print("post x[0]: ", y_pol[0], y_val[0])
-    # print("post x: ", len(x))
     return x, y_pol, y_val
 
 
@@ -114,6 +100,7 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
 
     data_store = DataStore(4)
 
+    # TODO: create process that does this
     # import ResNet as nn
 
     base_name = "Models/" + str(game_name) + "/"
@@ -129,24 +116,17 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
                                                 load_weights_name,
                                                 seeds=seeds)
 
-        # print("1x", x, x.shape)
-        # print("1y_pol", y_pol, y_pol.shape)
-        # print("1y_val", y_val, y_val.shape)
         x, y_pol, y_val = combine_equals(x, y_pol, y_val)
 
         data_store.max_epochs_stored = min(40, 4 + 3 * epochs // 4)
         data_store.put_data(x, y_pol, y_val)
         x, y_pol, y_val = data_store.get_data()
-        # print("x", x, x.shape)
-        # print("y_pol", y_pol, y_pol.shape)
-        # print("y_val", y_val, y_val.shape)
         store_weights_name = base_name + "10_3_" + str(epoch + 1) + ".h5"
         worker = Process(target=train_process, args=(x, y_pol, y_val, load_weights_name, store_weights_name, h, w, d))
         worker.daemon = True
         worker.start()
         worker.join()
         print("Finished epoch", epoch, "time:", time.time() - now)
-        # time.sleep(10)
     return None
 
 

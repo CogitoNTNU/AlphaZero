@@ -2,7 +2,6 @@ from FourInARow import Gamelogic
 import MCTS
 import ResNet
 from FourInARow import Config
-import Files
 import os
 
 game = Gamelogic.FourInARow()

@@ -9,7 +9,7 @@ import os
 opponents = ["Models for TicTacToe: "]
 opponents_TicTacToe = []
 opponents_FourInARow = []
-for opponent in os.listdir("Models/TicTactoe/"):
+for opponent in os.listdir("Models/TicTacToe/"):
     opponents.append(opponent)
     opponents_TicTacToe.append(opponent)
 opponents.append("Models for FourInARow: ")
@@ -21,8 +21,8 @@ for opponent in os.listdir("Models/FourInARow"):
 parser = argparse.ArgumentParser(description='Command line for AZ!')
 parser.add_argument("--game", default= "TicTacToe",
                     choices= ["TicTacToe", "FourInARow"], required=False, help= "Choose one of the games from the list")
-parser.add_argument("--numSearch", type = int,  default = 2, help = "This is number of searches preformed by MCTS")
-parser.add_argument("--opponent", type = str, default= "4r_7", choices = opponents ,
+parser.add_argument("--numSearch", type = int,  default = 300, help = "This is number of searches preformed by MCTS")
+parser.add_argument("--opponent", type = str, default= "10_3_2", choices = opponents ,
                     help = "Choose the agent you want to play against.")
 
 
@@ -40,8 +40,8 @@ while i == 0:
             if o == opponent:
                 i = 1
     if typeOfGame == "FourInARow":
-        if opponent == "4r_7":
-            opponent = "4r_299.h5"
+        if opponent == "10_3_2":
+            opponent = "10_3_18.h5"
         for o in opponents_FourInARow:
             if o == opponent:
                 i = 1
@@ -88,4 +88,3 @@ elif typeOfGame == "TicTacToe":
 """start game-loop"""
 
 rendering = GameRendering(game, agent, Config, numSearch)
-

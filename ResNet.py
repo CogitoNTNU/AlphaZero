@@ -21,7 +21,7 @@ class ResNet:
                        strides,
                        chan_dim,
                        red=False,
-                       reg=0.0001,
+                       reg=0.01,
                        bn_eps=2e-5,
                        bn_mom=0.9,
                        use_bias=True):
@@ -259,6 +259,3 @@ class ResNet:
                           depth=2,
                           filters=256,
                           policy_output_dim=9)
-
-
-

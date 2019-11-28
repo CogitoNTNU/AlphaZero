@@ -21,6 +21,7 @@ gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
 sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 set_session(sess)
 
+
 class GameRendering:
 
     def __init__(self, game, agent, Config, numSearch):
@@ -70,7 +71,7 @@ class GameRendering:
         try:
             self.test_graph = "digraph g{rankdir=LR;testing -> testing -> tested}"
             self.test_graph = pydot.graph_from_dot_data(self.test_graph)[0]
-            self.test_graph.write_png('Images/graph.png')
+            self.test_graph.write_png('Images/graph1.png')
         except FileNotFoundError:
             print("Error:Graphviz is not installed or not on path, skipping visualization")
             self.draw_graph = False
@@ -103,25 +104,26 @@ class GameRendering:
                     winner = myfont.render('Human won', False, (255, 255, 255))
                     self.won += 1
                 self.screen.blit(winner, (
-                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - winner.get_width() / 2,
-                self.side_length // 3 - winner.get_height() // 2))
+                    (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - winner.get_width() / 2,
+                    self.side_length // 3 - winner.get_height() // 2))
 
                 myfont = pygame.font.SysFont('Comic Sans MS', font_size)
                 switch_side = myfont.render('(Switching sides)', False, (0, 255, 0))
                 self.screen.blit(switch_side, (
-                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - switch_side.get_width() / 2,
-                self.side_length // 3 - switch_side.get_height() // 2 + winner.get_height()))
+                    (self.side_length * self.width + self.line_th + self.imagerect[
+                        0]) // 2 - switch_side.get_width() / 2,
+                    self.side_length // 3 - switch_side.get_height() // 2 + winner.get_height()))
 
                 """Shows the score"""
                 myfont = pygame.font.SysFont(self.default_font, 2 * font_size)
                 wtl = myfont.render('Win/Tie/Loss', False, self.white)
                 self.screen.blit(wtl, (
-                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - wtl.get_width() / 2,
-                (self.side_length * self.height) // 2 - wtl.get_height() // 2))
+                    (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - wtl.get_width() / 2,
+                    (self.side_length * self.height) // 2 - wtl.get_height() // 2))
                 score = myfont.render(str(self.won) + "-" + str(self.tied) + "-" + str(self.lost), False, self.white)
                 self.screen.blit(score, (
-                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - score.get_width() / 2,
-                (self.side_length * self.height) // 2 + wtl.get_height()))
+                    (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - score.get_width() / 2,
+                    (self.side_length * self.height) // 2 + wtl.get_height()))
 
                 pygame.display.flip()
                 print("GAME IS OVER")
@@ -182,7 +184,7 @@ class GameRendering:
             for move in possible_moves:
                 self.label = self.font_renderer.render(str(round(self.weights[move], 4)), 1, self.font_color)
                 self.screen.blit(self.label, [(self.side_length + self.line_th) // 2 + self.side_length * (
-                            (self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,
+                        (self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,
                                               self.side_length * ((8 - self.Config.move_to_number(
                                                   move)) // self.width) + self.label.get_height() - self.line_th])
                 pygame.display.flip()
@@ -191,7 +193,7 @@ class GameRendering:
             for move in possible_moves:
                 self.label = self.font_renderer.render(str(round(self.weights[move], 4)), 1, self.font_color)
                 self.screen.blit(self.label, [(self.side_length + self.line_th) // 2 + self.side_length * (
-                            (self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,
+                        (self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,
                                               (self.side_length // self.height) - self.label.get_height()])
                 pygame.display.flip()
 
@@ -279,7 +281,7 @@ class GameRendering:
         if self.tictactoe:
             self.mouse_pos = (self.mouse_pos[0], self.height * self.side_length - self.mouse_pos[1])
         self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (
-                    self.mouse_pos[0] - 2) // self.side_length))  # må generaliseres
+                self.mouse_pos[0] - 2) // self.side_length))  # må generaliseres
         sleep(0.2)  # Delay for preventing multiple presses accidently
 
     def build_graph(self, graph_root, tree_root, graph, heap):

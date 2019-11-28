@@ -17,21 +17,17 @@ for opponent in os.listdir("Models/FourInARow"):
     opponents.append(opponent)
     opponents_FourInARow.append(opponent)
 
-
 parser = argparse.ArgumentParser(description='Command line for AZ!')
-parser.add_argument("--game", default= "TicTacToe",
-                    choices= ["TicTacToe", "FourInARow"], required=False, help= "Choose one of the games from the list")
-parser.add_argument("--numSearch", type = int,  default = 300, help = "This is number of searches preformed by MCTS")
-parser.add_argument("--opponent", type = str, default= "10_3_2", choices = opponents ,
-                    help = "Choose the agent you want to play against.")
-
-
+parser.add_argument("--game", default="TicTacToe",
+                    choices=["TicTacToe", "FourInARow"], required=False, help="Choose one of the games from the list")
+parser.add_argument("--numSearch", type=int, default=300, help="This is number of searches preformed by MCTS")
+parser.add_argument("--opponent", type=str, default="10_3_2", choices=opponents,
+                    help="Choose the agent you want to play against.")
 
 args = parser.parse_args()
 typeOfGame = args.game
 numSearch = args.numSearch
 opponent = args.opponent
-
 
 i = 0
 while i == 0:
@@ -54,7 +50,6 @@ while i == 0:
         opponent = input("Choose the agent you want to play against: ")
         print(opponent)
 
-
 if typeOfGame == "FourInARow":
     game = Gamelogic.FourInARow()
 elif typeOfGame == "TicTacToe":
@@ -67,9 +62,8 @@ if typeOfGame == "FourInARow":
 elif typeOfGame == "TicTacToe":
     agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=10)
 
-
 agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
-                  optimizer=SGD(lr=0.001, momentum=0.9))
+              optimizer=SGD(lr=0.001, momentum=0.9))
 
 """retrieve weights file"""
 if typeOfGame == "FourInARow":

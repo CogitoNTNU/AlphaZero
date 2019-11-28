@@ -47,7 +47,8 @@ class ResNet:
                        padding="same",
                        use_bias=True,
                        kernel_initializer=TruncatedNormal(stddev=0.05),
-                       kernel_regularizer=l2(reg)
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
                        )(data)
         # the first block of the ResNet module are the 1x1 CONVs
         bn1 = BatchNormalization(axis=chan_dim,
@@ -62,7 +63,8 @@ class ResNet:
             padding="same",
             use_bias=True,
             kernel_initializer=TruncatedNormal(stddev=0.05),
-            kernel_regularizer=l2(reg)
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
         )(act1)
         # The second block of the ResNet module are the 3x3 CONVs
         bn2 = BatchNormalization(axis=chan_dim, epsilon=bn_eps, momentum=bn_mom)(conv2)
@@ -76,7 +78,8 @@ class ResNet:
                 strides=strides,
                 use_bias=True,
                 kernel_initializer=TruncatedNormal(stddev=0.05),
-                kernel_regularizer=l2(reg)
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
             )(act1)
 
         # Add together the shortcut and the final convolutional layer
@@ -108,7 +111,9 @@ class ResNet:
             strides=(1, 1),
             use_bias=True,
             padding="same",
-            kernel_initializer=TruncatedNormal(stddev=0.05)
+            kernel_initializer=TruncatedNormal(stddev=0.05),
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
         )(data)
         bn1 = BatchNormalization(
             axis=chan_dim,
@@ -118,7 +123,10 @@ class ResNet:
         x = Flatten()(act1)
         dn1 = Dense(
             policy_output_dim,
-            activation='linear')(x)
+            activation='linear',
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
+        )(x)
         return dn1
 
     @staticmethod
@@ -142,6 +150,8 @@ class ResNet:
             use_bias=True,
             padding="same",
             kernel_initializer=TruncatedNormal(stddev=0.05),
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
         )(data)
         bn1 = BatchNormalization(
             axis=chan_dim,
@@ -152,10 +162,17 @@ class ResNet:
         dn1 = Dense(
             256,
             activation='relu',
-            kernel_initializer=TruncatedNormal(stddev=0.05))(x)
+            use_bias=True,
+            kernel_initializer=TruncatedNormal(stddev=0.05),
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
+        )(x)
         dn2 = Dense(
             1,
-            activation='tanh'
+            use_bias=True,
+            activation='tanh',
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
         )(dn1)
         return dn2
 
@@ -200,7 +217,8 @@ class ResNet:
             use_bias=True,
             padding="same",
             kernel_initializer=TruncatedNormal(stddev=0.05),
-            kernel_regularizer=l2(reg)
+            kernel_regularizer=l2(0.01),
+            bias_regularizer=l2(0.01)
         )(input_data)
         x = BatchNormalization(
             axis=chan_dim,

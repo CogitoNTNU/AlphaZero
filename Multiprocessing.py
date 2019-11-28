@@ -15,7 +15,7 @@ class DataStore:
         self.counter = 0
 
     def put_data(self, x, y_pol, y_val):
-        self.data[self.counter] = [x, y_val, y_pol]
+        self.data[self.counter] = [x, y_pol, y_val]
         self.counter = (self.counter + 1) % self.max_epochs_stored
 
     def get_data(self):
@@ -71,7 +71,7 @@ def train_process(x, y_pol, y_val, load_name, store_name, h, w, d):
     set_session(sess)
 
     # Training the agent and storing the new weights
-    agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=7)
+    agent = ResNet.ResNet.build(h, w, d, 128, Config.policy_output_dim, num_res_blocks=10)
     agent.compile(loss=[softmax_cross_entropy_with_logits, 'mean_squared_error'],
                   optimizer=SGD(lr=0.0005, momentum=0.9))
     agent.load_weights(load_name)
@@ -79,13 +79,13 @@ def train_process(x, y_pol, y_val, load_name, store_name, h, w, d):
     # # print("x", x, x.shape)
     # # print("y_pol", y_pol, y_val.shape)
     # # print("y_val", y_val, y_val.shape)
-    agent.fit(x=x, y=[y_pol, y_val], batch_size=min(32, len(x)), epochs=2, callbacks=[])
+    agent.fit(x=x, y=[y_pol, y_val], batch_size=min(128, len(x)), epochs=2, callbacks=[])
     agent.save_weights(store_name)
 
 
 def combine_equals(x, y_pol, y_val):
-    print("pre x: ", len(x))
-    print("pre x[0]: ", x[0], y_pol[0], y_val[0])
+    # print("pre x: ", len(x))
+    # print("pre x[0]: ", x[0], y_pol[0], y_val[0])
     dd = defaultdict(lambda: [0, None, np.zeros(y_pol[0].shape), 0])
     for i in range(len(x)):
         c = dd[str(x[i])]
@@ -93,7 +93,7 @@ def combine_equals(x, y_pol, y_val):
         c[1] = x[i]
         c[2] += y_pol[i]
         c[3] += y_val[i]
-    print("mid x[0]: ", dd[str(x[0])])
+    # print("mid x[0]: ", dd[str(x[0])])
     x = []
     y_pol = []
     y_val = []
@@ -104,8 +104,8 @@ def combine_equals(x, y_pol, y_val):
     x = np.array(x)
     y_pol = np.array(y_pol)
     y_val = np.array(y_val)
-    print("post x[0]: ", y_pol[0], y_val[0])
-    print("post x: ", len(x))
+    # print("post x[0]: ", y_pol[0], y_val[0])
+    # print("post x: ", len(x))
     return x, y_pol, y_val
 
 
@@ -114,27 +114,33 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
 
     data_store = DataStore(4)
 
-    import ResNet as nn
+    # import ResNet as nn
 
     base_name = "Models/" + str(game_name) + "/"
-    nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=20).save_weights(base_name + "20_0.h5")
+    # nn.ResNet().build(h, w, d, 128, config.policy_output_dim, num_res_blocks=10).save_weights(base_name + "10_3_0.h5")
 
     for epoch in range(epochs):
         now = time.time()
-        load_weights_name = base_name + "20_" + str(epoch) + ".h5"
+        load_weights_name = base_name + "10_3_" + str(epoch) + ".h5"
         seed_max = 1000000000
         seeds = [[np.random.randint(0, seed_max) for _ in range(num_games_each_process)] for _ in
                  range(num_games_each_process)]
         x, y_pol, y_val = multiprocess_function(config, num_processes, num_games_each_process, num_search,
                                                 load_weights_name,
                                                 seeds=seeds)
+
+        # print("1x", x, x.shape)
+        # print("1y_pol", y_pol, y_pol.shape)
+        # print("1y_val", y_val, y_val.shape)
         x, y_pol, y_val = combine_equals(x, y_pol, y_val)
 
-        data_store.max_epochs_stored = min(20, 4 + 3 * epochs // 4)
+        data_store.max_epochs_stored = min(40, 4 + 3 * epochs // 4)
         data_store.put_data(x, y_pol, y_val)
         x, y_pol, y_val = data_store.get_data()
-
-        store_weights_name = base_name + "20_" + str(epoch + 1) + ".h5"
+        # print("x", x, x.shape)
+        # print("y_pol", y_pol, y_pol.shape)
+        # print("y_val", y_val, y_val.shape)
+        store_weights_name = base_name + "10_3_" + str(epoch + 1) + ".h5"
         worker = Process(target=train_process, args=(x, y_pol, y_val, load_weights_name, store_weights_name, h, w, d))
         worker.daemon = True
         worker.start()
@@ -145,4 +151,4 @@ def train(config, epochs, num_processes, num_games_each_process, num_search, gam
 
 
 if __name__ == '__main__':
-    train(Config, 3000, 16, 300, 400, Config.name)
+    train(Config, 3000, 8, 500, 600, Config.name)

@@ -26,7 +26,8 @@ class MCTS:
         self.alpha = 1.3  # Dirichlet noise variable
         self.epsilon = 0.5  # The amount of dirichlet noise that is added
 
-        self.temperature = 1.4
+        self.temperature = 1
+        self.drop_temperature = 0.5
 
         # #######I/O shape for eval.#######
         self.NN_input_dim = None
@@ -91,16 +92,16 @@ class MCTS:
         return prob
 
     # Returning the temperature probabilities calculated from the number of searches for each action
-    def get_temperature_probabilities(self, state):
+    def get_temperature_probabilities(self, state, len_hist):
         prob = np.zeros(self.policy_output_dim)
         for action in self.pos_move_dict[state]:
             prob[self.move_to_number_func(action)] = self.search_dict[str(state) + '-' + str(action)][0]
-        temp = np.power(prob, 1 / self.temperature)
+        temp = np.power(prob, 1 / self.drop_temperature if len_hist >= 30 else self.temperature)
         return temp / temp.sum()
 
     # Returning a random move proportional to the temperature probabilities
-    def get_temperature_move(self, state):
-        temp_probs = self.get_temperature_probabilities(state)
+    def get_temperature_move(self, state, len_hist=0):
+        temp_probs = self.get_temperature_probabilities(state, len_hist=len_hist)
         temp_num = np.random.choice(temp_probs.shape[0], 1, p=temp_probs)[0]
         return self.number_to_move_func(temp_num)
 

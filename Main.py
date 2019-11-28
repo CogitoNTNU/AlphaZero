@@ -27,7 +27,7 @@ def get_tree(config, agent, game, dirichlet_noise=True, seed=0):
     tree.number_to_move_func = config.number_to_move
     tree.set_evaluation(agent)
     tree.set_game(game)
-    print("setting seed", seed)
+    # print("setting seed", seed)
     tree.set_seed(seed)
     return tree
 
@@ -54,7 +54,7 @@ class GameGenerator:
 
     def execute_best_move(self):
         state = self.game.get_state()
-        temp_move = self.tree.get_temperature_move(state)
+        temp_move = self.tree.get_temperature_move(state, len_hist=len(self.history))
         # print(self.tree.get_prior_probabilities(state))
         # print("temp move", temp_move, self.tree.seed)
         self.history.append(temp_move)
@@ -76,8 +76,10 @@ class GameGenerator:
 
 # Generating data by self-play
 def generate_data(res_dict, config1, num_games_each_process, num_search, num_process, name_weights, seeds):
-    print("Starting", num_process)
-
+    # print("Starting", num_process)
+    # import os
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = ""
     import tensorflow as tf
     # print("_a_")
     import ResNet as ResNet_p
@@ -88,7 +90,7 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
     # print("_j_")
     from loss import softmax_cross_entropy_with_logits, softmax
     # print("_i_")
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.03)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.015)
     # print("_h_")
     sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
     # print("_g_")
@@ -97,7 +99,7 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
 
     h, w, d = config1.board_dims[1:]
     # print("_e_")
-    agent = ResNet_p.ResNet.build(h, w, d, 128, config1.policy_output_dim, num_res_blocks=7)
+    agent = ResNet_p.ResNet.build(h, w, d, 128, config1.policy_output_dim, num_res_blocks=10)
     # print("_d_")
     agent.load_weights(name_weights)
     # print("_c_")
@@ -110,9 +112,12 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
     y_value = []
     print("Ready to play", num_process)
 
+    predicted = {}
+
     while len(game_generators):
         # print("test1")
         res = [game_generator.reset_tree() for game_generator in game_generators]
+        print("len_dict", len(predicted.keys()))
         for i in range(num_search):
             # print("test2")
             res = [game_generator.run_part1() for game_generator in game_generators]
@@ -120,25 +125,36 @@ def generate_data(res_dict, config1, num_games_each_process, num_search, num_pro
             to_predict = []
             to_predict_generators = []
             no_predict_generators = []
+            predicted_generators = []
+            predicted_states = []
             for l in range(len(res)):
                 # print("test4")
                 if res[l] is not None:
-                    # print("To predict", res[l])
-                    # print("Stack:", game_generators[l].tree.search_stack, game_generators[l].tree, game_generators[l])
-                    to_predict.append(res[l])
-                    to_predict_generators.append(game_generators[l])
+                    if np.array_str(res[l]) in predicted:
+                        predicted_generators.append(game_generators[l])
+                        predicted_states.append(res[l])
+                    else:
+                        # print("To predict", res[l])
+                        # print("Stack:", game_generators[l].tree.search_stack, game_generators[l].tree, game_generators[l])
+                        to_predict.append(res[l])
+                        to_predict_generators.append(game_generators[l])
+                        predicted[np.array_str(res[l])] = None
                 else:
                     no_predict_generators.append(game_generators[l])
                 # print("test5")
             # print("test6")
             if len(to_predict):
-                # print("to_predict", to_predict)
+                # print("to_predict", len(to_predict))
                 batch = np.array(to_predict)
                 results = agent.predict(batch)
+                for j in range(len(to_predict)):
+                    predicted[np.array_str(to_predict[j])] = [results[0][j], results[1][j][0]]
                 # print("result", results)
 
             # print("test7")
-            [to_predict_generators[i].run_part2(np.array([results[0][i], results[1][i][0]])) for i in
+            [predicted_generators[j].run_part2(np.array(predicted[np.array_str(predicted_states[j])])) for j in
+             range(len(predicted_generators))]
+            [to_predict_generators[j].run_part2(np.array([results[0][j], results[1][j][0]])) for j in
              range(len(to_predict_generators))]
             # print("test8")
             [no_predict_generators[i].run_part2(None) for i in range(len(no_predict_generators))]

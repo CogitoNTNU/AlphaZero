@@ -6,6 +6,7 @@ import pydot
 import heapq
 import os
 import random
+
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 # from MCTS import MCTS
@@ -13,15 +14,16 @@ from Main import *
 
 """Weird bug when trying to import MCTS, so had to star import from Main"""
 
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+set_session(sess)
 
 class GameRendering:
 
-# <<<<<<< HEAD
-
     def __init__(self, game, agent, Config, numSearch):
-# =======
-#     def __init__(self, game, agent, Config):
-# >>>>>>> newMCTS
         """Initialize the pygame"""
         pygame.init()
         pygame.font.init()
@@ -40,28 +42,17 @@ class GameRendering:
         self.line_th = 5
         self.height = self.game.board_dims[1]
         self.width = self.game.board_dims[2]
-# <<<<<<< HEAD
-        self.image = pygame.image.load("nevraltnett.png")
+        self.image = pygame.image.load("Images/nevraltnett.png")
         self.imagerect = (0, 0)
         self.black = (0, 0, 0)
         self.white = (255, 255, 255)
-        self.piece_size = self.side_length//3
-        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0], max(self.side_length * (self.height + 1) + self.line_th,self.imagerect[1])])#+ self.imagerect[0],self.imagerect[1]
-        self.weights = [0]*len(self.game.get_moves())   #Set weight to empty array to represent all moves
-        self.count = 0 #Switches sides of human and machine
+        self.piece_size = self.side_length // 3
+        self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th + self.imagerect[0],
+                                               max(self.side_length * (self.height + 1) + self.line_th,
+                                                   self.imagerect[1])])  # + self.imagerect[0],self.imagerect[1]
+        self.weights = [0] * len(self.game.get_moves())  # Set weight to empty array to represent all moves
+        self.count = 0  # Switches sides of human and machine
         self.primary_line = []
-# =======
-#         #        self.image = pygame.image.load("nevraltnett.png")
-#         #        self.imagerect = self.image.get_size()
-#         self.black = (0, 0, 0)
-#         self.white = (255, 255, 255)
-#         self.piece_size = self.side_length // 3
-#         self.screen = pygame.display.set_mode([self.side_length * self.width + self.line_th,
-#                                                max(self.side_length * self.height + self.line_th,
-#                                                    0)])  # + self.imagerect[0],self.imagerect[1]
-#         self.weights = [0] * len(self.game.get_moves())  # Set weight to empty array to represent all moves
-#         self.count = 0  # Switches sides of human and machine
-# >>>>>>> newMCTS
         self.won = 0
         self.tied = 0
         self.lost = 0
@@ -70,32 +61,24 @@ class GameRendering:
         self.tictactoe = False
         self.fourinarow = False
         if self.game.name == "TicTacToe":
-# <<<<<<< HEAD
-            self.tictactoe=True
+            self.tictactoe = True
             self.background_color = (0, 109, 50)
         elif self.game.name == "FourInARow":
             self.fourinarow = True
             self.background_color = (0, 100, 150)
         """check if graphviz is installed and in path"""
         try:
-            self.test_graph="digraph g{rankdir=LR;testing -> testing -> tested}"
+            self.test_graph = "digraph g{rankdir=LR;testing -> testing -> tested}"
             self.test_graph = pydot.graph_from_dot_data(self.test_graph)[0]
-            self.test_graph.write_png('graph.png')
+            self.test_graph.write_png('Images/graph.png')
         except FileNotFoundError:
             print("Error:Graphviz is not installed or not on path, skipping visualization")
-            self.draw_graph=False
+            self.draw_graph = False
         except:
             print("Error: Unknown error with graph visualization, skipping")
-            self.draw_graph=False
+            self.draw_graph = False
         else:
-            self.draw_graph=True
-
-
-# =======
-#             self.tictactoe = True
-#         elif self.game.name == "FourInARow":
-#             self.fourinarow = True
-# >>>>>>> newMCTS
+            self.draw_graph = True
 
         self.update_screen()
 
@@ -103,25 +86,11 @@ class GameRendering:
         while True:
             self.mouse_pos = pygame.mouse.get_pos()
             if self.game.is_final():
-# <<<<<<< HEAD
                 sleep(4)
-# =======
-#                 """show winning move"""
-#                 self.update_screen()
-#                 if self.game.name == "FourInARow" and self.game.get_winning_pieces() is not None:
-#                     pygame.draw.line(self.screen, self.white,
-#                                  [(self.side_length + self.line_th) // 2 + self.side_length * self.game.get_winning_pieces()[0][1], (self.side_length + self.line_th) // 2 + self.side_length * (self.height - self.game.get_winning_pieces()[0][0] - 1)],
-#                                  [(self.side_length + self.line_th) // 2 + self.side_length * self.game.get_winning_pieces()[1][1], (self.side_length + self.line_th) // 2 + self.side_length * (self.height - self.game.get_winning_pieces()[1][0] - 1)],
-#                                  self.line_th)
-#                     pygame.display.flip()
-#                 sleep(1)
-#                 sleep(4)
-#
-# >>>>>>> newMCTS
                 """Show death screen"""
                 self.screen.fill(self.black)
-                font_size = max((self.side_length*self.width + self.line_th) // 35 , 20)
-                myfont = pygame.font.SysFont(self.default_font, 2*font_size)
+                font_size = max((self.side_length * self.width + self.line_th) // 35, 20)
+                myfont = pygame.font.SysFont(self.default_font, 2 * font_size)
                 """Who won"""
                 if self.game.get_outcome()[0] == 0:
                     winner = myfont.render('Tied', False, (255, 255, 255))
@@ -133,46 +102,33 @@ class GameRendering:
                 else:
                     winner = myfont.render('Human won', False, (255, 255, 255))
                     self.won += 1
-# <<<<<<< HEAD
-                self.screen.blit(winner,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - winner.get_width()/2 , self.side_length//3 - winner.get_height()//2))
-                
+                self.screen.blit(winner, (
+                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - winner.get_width() / 2,
+                self.side_length // 3 - winner.get_height() // 2))
+
                 myfont = pygame.font.SysFont('Comic Sans MS', font_size)
                 switch_side = myfont.render('(Switching sides)', False, (0, 255, 0))
-                self.screen.blit(switch_side,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - switch_side.get_width()/2, self.side_length//3 - switch_side.get_height()//2 + winner.get_height()))
-                
-# =======
-#                 self.screen.blit(winner, ((self.side_length * self.width + self.line_th) // 2 - winner.get_width() / 2,
-#                                           self.side_length // 3 - winner.get_height() // 2))
-#
-#                 myfont = pygame.font.SysFont('Comic Sans MS', 10)
-#                 switch_side = myfont.render('(Switching sides)', False, (0, 255, 0))
-#                 self.screen.blit(switch_side, (
-#                 (self.side_length * self.width + self.line_th) // 2 - switch_side.get_width() / 2,
-#                 self.side_length // 3 - switch_side.get_height() // 2 + winner.get_height()))
-#
-# >>>>>>> newMCTS
+                self.screen.blit(switch_side, (
+                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - switch_side.get_width() / 2,
+                self.side_length // 3 - switch_side.get_height() // 2 + winner.get_height()))
+
                 """Shows the score"""
-                myfont = pygame.font.SysFont(self.default_font, 2*font_size)
+                myfont = pygame.font.SysFont(self.default_font, 2 * font_size)
                 wtl = myfont.render('Win/Tie/Loss', False, self.white)
-# <<<<<<< HEAD
-                self.screen.blit(wtl,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - wtl.get_width()/2, (self.side_length*self.height)//2 - wtl.get_height()//2))
-                score = myfont.render(str(self.won)+"-"+str(self.tied)+"-"+str(self.lost), False, self.white)
-                self.screen.blit(score,((self.side_length*self.width + self.line_th + self.imagerect[0]) // 2 - score.get_width()/2, (self.side_length*self.height)//2 + wtl.get_height()))
-                
-# =======
-#                 self.screen.blit(wtl, ((self.side_length * self.width + self.line_th) // 2 - wtl.get_width() / 2,
-#                                        (self.side_length * self.height) // 2 - wtl.get_height() // 2))
-#                 score = myfont.render(str(self.won) + "-" + str(self.tied) + "-" + str(self.lost), False, self.white)
-#                 self.screen.blit(score, ((self.side_length * self.width + self.line_th) // 2 - score.get_width() / 2,
-#                                          (self.side_length * self.height) // 2 + wtl.get_height()))
-#
-# >>>>>>> newMCTS
+                self.screen.blit(wtl, (
+                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - wtl.get_width() / 2,
+                (self.side_length * self.height) // 2 - wtl.get_height() // 2))
+                score = myfont.render(str(self.won) + "-" + str(self.tied) + "-" + str(self.lost), False, self.white)
+                self.screen.blit(score, (
+                (self.side_length * self.width + self.line_th + self.imagerect[0]) // 2 - score.get_width() / 2,
+                (self.side_length * self.height) // 2 + wtl.get_height()))
+
                 pygame.display.flip()
                 print("GAME IS OVER")
                 self.count += 1  # Switches sides
 
                 sleep(1)  # Catch glitchy graohics
-                # sleep(4)    #Hold the death screen open
+                sleep(4)  # Hold the death screen open
                 """clean the board and graphics"""
                 self.weights = [0] * len(self.weights)
                 self.game.board = np.copy(self.start_pos)  # don't want to change it
@@ -200,74 +156,35 @@ class GameRendering:
 
             elif not self.game.is_final():
                 """If machines turn, machine do move"""
-# <<<<<<< HEAD
                 tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
-                if len(self.game.get_moves()) > 1:   # Does not compute last possible move very deeply
+                if len(self.game.get_moves()) > 1:  # Does not compute last possible move very deeply
                     for searches in range(numSearch):
                         tree.search()
-                        if (searches%100 == 0 and searches != 0):
+                        if (searches % 100 == 0 and searches != 0):
                             """update weight on screen every 200 search"""
                             self.NNvisual(tree, num_nodes=20)
 
-                    self.NNvisual(tree,num_nodes=20)
+                    self.NNvisual(tree, num_nodes=20)
                 else:
                     tree.search_series(numSearch)
                 predict = tree.get_most_searched_move(tree.root)
-#                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
-# =======
-#                 # tree = MCTS.MCTS(self.game, self.game.board, self.agent, self.Config)
-#                 tree = MCTS.MCTS()
-#                 tree.dirichlet_noise = False
-#                 tree.NN_input_dim = Config.board_dims
-#                 tree.policy_output_dim = Config.policy_output_dim
-#                 tree.NN_output_to_moves_func = Config.NN_output_to_moves
-#                 tree.move_to_number_func = Config.move_to_number
-#                 tree.number_to_move_func = Config.number_to_move
-#                 tree.set_evaluation(self.agent)
-#                 tree.set_game(self.game)
-#                 if len(self.game.history) > 0 and len(
-#                         self.game.get_moves()) > 1:  # Does not compute first, and last possible move very deeply
-#                     for searches in range(2):
-#                         tree.search_series(500)
-#                         if searches % 200 == 0:
-#                             """update weight on screen every 200 search"""
-#                             self.weights = tree.get_posterior_probabilities(self.game.get_state())
-#                             print(tree.get_prior_probabilities(self.game.get_state()))
-#                             self.update_screen()
-#                             self.see_valuation()
-#                 else:
-#                     tree.search_series(1000)
-#                 print("Searched", tree.get_posterior_probabilities(self.game.get_state()))
-#                 predict = tree.get_most_searched_move(self.game.get_state())
-#                 #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
-# >>>>>>> newMCTS
+                #                print("Stillingen vurderes som: ",self.agent.predict(np.array([self.game.get_board()]))[1])
                 self.game.execute_move(predict)
                 self.update_screen()
                 self.show_gamelines(self.primary_line)
                 self.see_valuation()
 
-# <<<<<<< HEAD
-#
-#
-# =======
-# >>>>>>> newMCTS
     def see_valuation(self):
         """see how the nn values different moves on its turn for itself"""
         if self.tictactoe:
             """Has to flip the logic in y direction since it increases down"""
             possible_moves = self.game.get_moves()
             for move in possible_moves:
-# <<<<<<< HEAD
-                self.label = self.font_renderer.render(str(round(self.weights[move],4)),1,self.font_color)
-                self.screen.blit(self.label,[ (self.side_length + self.line_th) // 2 + self.side_length * ((self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,self.side_length * ((8-self.Config.move_to_number(move))//self.width) + self.label.get_height() - self.line_th ])
-# =======
-#                 self.label = self.font_renderer.render(str(round(self.weights[move], 4)), 1, self.font_color)
-#                 self.screen.blit(self.label, [(self.side_length + self.line_th) // 2 + self.side_length * (
-#                             (self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,
-#                                               (self.side_length + self.line_th) // 2 + self.side_length * ((
-#                                                                                                                        8 - self.Config.move_to_number(
-#                                                                                                                    move)) // self.width) - self.label.get_height()])
-# >>>>>>> newMCTS
+                self.label = self.font_renderer.render(str(round(self.weights[move], 4)), 1, self.font_color)
+                self.screen.blit(self.label, [(self.side_length + self.line_th) // 2 + self.side_length * (
+                            (self.Config.move_to_number(move)) % self.width) - self.label.get_width() / 2,
+                                              self.side_length * ((8 - self.Config.move_to_number(
+                                                  move)) // self.width) + self.label.get_height() - self.line_th])
                 pygame.display.flip()
         elif self.fourinarow:
             possible_moves = self.game.get_moves()
@@ -283,7 +200,7 @@ class GameRendering:
 
         """Background"""
         self.screen.fill(background_color)
-        self.screen.blit(self.image,(self.width * self.side_length + self.line_th,0))
+        self.screen.blit(self.image, (self.width * self.side_length + self.line_th, 0))
         """Draw board lines
         pygame.draw.line(surface, color, start_pos, end_pos, width)"""
         for line in range(self.width + 1):
@@ -293,20 +210,12 @@ class GameRendering:
                              [line * self.side_length + 2, self.side_length * self.height + self.line_th - 2],
                              self.line_th)
             """Horizontal lines"""
-# <<<<<<< HEAD
             if line <= self.height:
                 pygame.draw.line(self.screen, line_color,
-                                [0, line * self.side_length + 2],
-                                [self.side_length * self.width + self.line_th-2, line * self.side_length + 2],
-                                self.line_th)
-            
-# =======
-#             pygame.draw.line(self.screen, line_color,
-#                              [0, line * self.side_length + 2],
-#                              [self.side_length * self.width + self.line_th - 2, line * self.side_length + 2],
-#                              self.line_th)
-#
-# >>>>>>> newMCTS
+                                 [0, line * self.side_length + 2],
+                                 [self.side_length * self.width + self.line_th - 2, line * self.side_length + 2],
+                                 self.line_th)
+
         """Render pieces"""
         board = self.game.board
         for x in range(self.width):
@@ -327,13 +236,12 @@ class GameRendering:
         for move in possible_moves:
             new_possible_color = (possible_color[0], possible_color[1], 200 * self.weights[move])
             if self.tictactoe:
-# <<<<<<< HEAD
                 move = self.y_flip(move)
             pygame.draw.circle(self.screen, new_possible_color, [
-                    (self.side_length + self.line_th) // 2 + self.side_length * (
-                                (self.Config.move_to_number(move)) % self.width),
-                    (self.side_length + self.line_th) // 2 + self.side_length * (
-                                (self.Config.move_to_number(move)) // self.width)], self.piece_size)
+                (self.side_length + self.line_th) // 2 + self.side_length * (
+                        (self.Config.move_to_number(move)) % self.width),
+                (self.side_length + self.line_th) // 2 + self.side_length * (
+                        (self.Config.move_to_number(move)) // self.width)], self.piece_size)
             myfont = pygame.font.SysFont(self.default_font, self.piece_size)
             action = myfont.render(str(move), False, background_color)
             self.screen.blit(action, ((self.side_length + self.line_th) // 2 + self.side_length * (
@@ -341,14 +249,6 @@ class GameRendering:
                                       (self.side_length + self.line_th) // 2 + self.side_length * (
                                               (self.Config.move_to_number(
                                                   move)) // self.width) - action.get_height() // 2))
-# =======
-#                 move = (self.width * self.height) - (move) // self.width * self.width + (move) % self.width - self.width
-#             pygame.draw.circle(self.screen, new_possible_color, [
-#                 (self.side_length + self.line_th) // 2 + self.side_length * (
-#                         (self.Config.move_to_number(move)) % self.width),
-#                 (self.side_length + self.line_th) // 2 + self.side_length * (
-#                         (self.Config.move_to_number(move)) // self.width)], self.piece_size)
-# >>>>>>> newMCTS
         pygame.display.flip()
 
     def _render_tictactoe(self):
@@ -357,13 +257,7 @@ class GameRendering:
         p1_color = self.white
         p2_color = self.black
         possible_color = (255, 0, 0)
-# <<<<<<< HEAD
         self._render(self.background_color, line_color, p1_color, p2_color, possible_color)
-        
-
-# =======
-#         self._render(background_color, line_color, p1_color, p2_color, possible_color)
-# >>>>>>> newMCTS
 
     def _render_fourinarow(self):
         """Update screen for Four in a Row"""
@@ -371,11 +265,7 @@ class GameRendering:
         p1_color = (255, 0, 0)
         p2_color = (255, 255, 0)
         possible_color = (0, 255, 0)
-# <<<<<<< HEAD
         self._render(self.background_color, line_color, p1_color, p2_color, possible_color)
-# =======
-#         self._render(background_color, line_color, p1_color, p2_color, possible_color)
-# >>>>>>> newMCTS
 
     def update_screen(self):
         """updates the screen with the right graphics"""
@@ -387,13 +277,13 @@ class GameRendering:
     def execute_move(self):
         """Find the mouse position and execute move based on it"""
         if self.tictactoe:
-# <<<<<<< HEAD
-            self.mouse_pos=(self.mouse_pos[0],self.height*self.side_length-self.mouse_pos[1])
-        self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (self.mouse_pos[0] - 2) // self.side_length))#må generaliseres
-        sleep(0.2) # Delay for preventing multiple presses accidently
+            self.mouse_pos = (self.mouse_pos[0], self.height * self.side_length - self.mouse_pos[1])
+        self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (
+                    self.mouse_pos[0] - 2) // self.side_length))  # må generaliseres
+        sleep(0.2)  # Delay for preventing multiple presses accidently
 
     def build_graph(self, graph_root, tree_root, graph, heap):
-        heapq.heappush(heap,(100000 - tree_root.get_times_visited(),random.randint(1,10000000000), tree_root))
+        heapq.heappush(heap, (100000 - tree_root.get_times_visited(), random.randint(1, 10000000000), tree_root))
         # graph.add_node(node)
         for child in tree_root.children:
             self.build_graph(None, child, graph, heap)
@@ -420,7 +310,7 @@ class GameRendering:
                 graph.add_edge(pydot.Edge(id(tree_node.parent), id(tree_node), label=str(move)))
         """roterer grafen, setter bakgrunn"""
         graph_string = graph.to_string()
-        graph_string = graph_string.replace("{",'{rankdir = LR;bgcolor="#%02x%02x%02x";' % self.background_color)
+        graph_string = graph_string.replace("{", '{rankdir = LR;bgcolor="#%02x%02x%02x";' % self.background_color)
         graph = pydot.graph_from_dot_data(graph_string)[0]
         graph.write_png('graph.png')
 
@@ -445,7 +335,7 @@ class GameRendering:
                 self.primary_line.append(self.y_flip(best_action.last_action))
             else:
                 self.primary_line.append(best_action.last_action)
-            best_action =tree.get_most_searched_child_node(best_action)
+            best_action = tree.get_most_searched_child_node(best_action)
         '''update screen'''
         self.update_screen()
         self.see_valuation()
@@ -458,11 +348,5 @@ class GameRendering:
         pygame.display.flip()
 
     def y_flip(self, move):
-        #for use with TicTacToe
+        # for use with TicTacToe
         return (self.width * self.height) - (move) // self.width * self.width + (move) % self.width - self.width
-# =======
-#             self.mouse_pos = (self.mouse_pos[0], self.height * self.side_length - self.mouse_pos[1])
-#         self.game.execute_move(self.Config.number_to_move((self.mouse_pos[1] - 2) // self.side_length * self.width + (
-#                     self.mouse_pos[0] - 2) // self.side_length))  # må generaliseres
-#         sleep(0.2)  # Delay for preventing multiple presses accidently
-# >>>>>>> newMCTS

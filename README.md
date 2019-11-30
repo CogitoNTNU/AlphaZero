@@ -66,8 +66,13 @@ python3 play.py --game FourInARow --numSearch 1000
 
 ## Results
 Having played only 3000 games of Tic Tac Toe againts itself, AZ was able to master the game. By only jusing raw predictrions from the resnet, it plays perfectly. 
-After 100 000 self-played games on Four In A Row, the network is able to play at a decent level with 500 searches per move.
-__more results coming soon__
+After about 100 000 self-played games on Four In A Row, the network is able to play at a decent level with 500 searches per move.
+<p align="center">
+<img src="https://github.com/CogitoNTNU/AlphaZero/blob/master/Images/table.png" width="80%" /><br>
+<b>Table 1</b>: outcome of 98 matches between different generations of AlphaZero. The cell is coloured <br> with respect to the final result. Green means that the most recent generation won, red means it<br> lost, and white symbolises a draw.
+</p>
+
+From <b>Table 1</b> you can see that AlphaZero consistently beat previous generations (always green cells between different generations). This implies that the training was successful and that it continously improved. It would likely have continued to improve if training preceded, since the training curve had not converged completely. This is good news as it is <i>obviously</i> not taking the optimal move in every position. That said, it is a tough opponent.
 
 
 ## Add your own game
